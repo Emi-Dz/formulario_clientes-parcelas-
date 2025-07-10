@@ -1,71 +1,105 @@
-// This file is NOT part of the frontend application.
-// This is the code you must paste into the Google Apps Script editor
-// associated with your Google Sheet.
+// This is the NEW READ-ONLY script.
+// This should be deployed as a new web app, and its URL used for VITE_GOOGLE_SHEETS_READ_URL.
+// It safely exposes client data without allowing write access.
 
-// The sheet name you want to write data to.
-const SHEET_NAME = "Clientes"; 
+const SHEET_NAME = "Clientes";
 
-/**
- * This function handles the browser's preflight OPTIONS request, which is a security
- * check made before the actual POST request. It returns the necessary CORS headers.
- * @param {object} e - The event parameter for an OPTIONS request.
- */
-function doOptions(e) {
-  return ContentService.createTextOutput()
-    .setMimeType(ContentService.MimeType.JSON)
-    .setHeaders({
-      'Access-Control-Allow-Origin': '*', // Allows requests from any origin. For higher security, replace '*' with your Vercel app's URL.
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type'
-    });
-}
+// This is the map of Google Sheet columns (A=0, B=1, etc.) to the keys in our SaleData type.
+// It's crucial that this order matches your sheet's layout.
+const COLUMN_MAP = {
+  0: 'timestamp',
+  // 1 is email, skip
+  2: 'vendedor',
+  3: 'clientCpf',
+  4: 'languages', // Special handling
+  5: 'clientFullName', // Split from full name
+  6: 'clientFullName', // Split from full name
+  7: 'purchaseDate',
+  8: 'phone',
+  9: 'product',
+  10: 'paymentSystem',
+  11: 'installments',
+  12: 'installmentPrice',
+  13: 'totalProductPrice',
+  14: 'downPayment',
+  15: 'paymentStartDate', // Special handling
+  16: 'reference2Name', // Special handling
+  17: 'storeName',
+  18: 'workAddress',
+  19: 'homeAddress',
+  20: 'notes',
+  // Photo fields and locations from here on need to be mapped carefully
+  28: 'workLocation',
+  29: 'homeLocation',
+};
 
-/**
- * This function is the entry point for POST requests to your Web App URL.
- * It receives data from the frontend, parses it, and appends it to the specified Google Sheet.
- * @param {object} e - The event parameter for a POST request.
- */
-function doPost(e) {
+
+function doGet(e) {
   try {
-    // Open the spreadsheet by its ID (or the one this script is bound to).
-    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = spreadsheet.getSheetByName(SHEET_NAME);
-
-    // If the sheet doesn't exist, throw an error.
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
     if (!sheet) {
-      throw new Error(`Sheet with name "${SHEET_NAME}" not found.`);
+      return createJsonResponse({ error: `Sheet with name "${SHEET_NAME}" not found.` }, 404);
     }
 
-    // Parse the JSON data sent from the frontend.
-    const postData = JSON.parse(e.postData.contents);
-    const rowData = postData.rowData;
+    // Get all data, from row 2 to the end, to skip the header.
+    const dataRange = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn());
+    const values = dataRange.getValues();
 
-    // Validate that we received an array.
-    if (!Array.isArray(rowData)) {
-      throw new Error("Invalid data format received. Expected an array in 'rowData'.");
-    }
+    const clients = values.map((row, index) => {
+      const client = {
+        id: (index + 2).toString(), // Use row number as a stable ID
+      };
 
-    // Append the array as a new row in the sheet.
-    sheet.appendRow(rowData);
+      // Map columns based on our COLUMN_MAP
+      for (const colIndex in COLUMN_MAP) {
+        const key = COLUMN_MAP[colIndex];
+        const value = row[colIndex];
+        
+        if (key === 'clientFullName') {
+           // Combine first name (col 5) and last name (col 6)
+          client[key] = `${row[5] || ''} ${row[6] || ''}`.trim();
+        } else if (key === 'languages') {
+           client.languages = {
+              es: (value || '').toLowerCase().includes('es'),
+              pt: (value || '').toLowerCase().includes('pt'),
+           };
+        } else if (key === 'paymentStartDate') {
+           // Extract only the date part
+           client[key] = (value || '').split(' ')[0];
+           client.reference1Name = (value || '').substring((value || '').indexOf(' ') + 1);
+        } else if (key === 'reference2Name') {
+           client[key] = (value || '').split(' (')[0];
+           client.reference2Relationship = (value || '').split(' (')[1]?.replace(')','') || '';
+        }
+        else if (['installments', 'installmentPrice', 'totalProductPrice', 'downPayment'].includes(key)) {
+          client[key] = parseFloat(value) || 0;
+        }
+        else {
+          client[key] = value;
+        }
+      }
+      return client;
+    }).filter(c => c.clientFullName); // Filter out empty rows
 
-    // Return a success response with CORS header.
-    return ContentService
-      .createTextOutput(JSON.stringify({ "status": "success", "message": "Row added." }))
-      .setMimeType(ContentService.MimeType.JSON)
-      .setHeaders({
-        'Access-Control-Allow-Origin': '*'
-      });
+    return createJsonResponse(clients);
 
   } catch (error) {
-    // Log the error for debugging purposes (View logs in Apps Script editor).
-    console.error("Error in doPost:", error);
-    
-    // Return a structured error response to the client with CORS header.
-    return ContentService
-      .createTextOutput(JSON.stringify({ "status": "error", "message": error.message }))
-      .setMimeType(ContentService.MimeType.JSON)
-      .setHeaders({
-        'Access-Control-Allow-Origin': '*'
-      });
+    return createJsonResponse({ error: error.message }, 500);
   }
+}
+
+function createJsonResponse(data, statusCode = 200) {
+  const output = ContentService.createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+  
+  // While this is a read-only endpoint, it's good practice to include CORS
+  // headers in case of preflight requests or direct browser access.
+  output.setHeaders({
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  });
+  
+  // Note: Apps Script doesn't really let you set a status code for the response,
+  // but we can structure the response to indicate success or failure.
+  return output;
 }
