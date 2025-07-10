@@ -1,4 +1,3 @@
-
 import { SaleData } from '../types';
 
 /**
@@ -6,8 +5,9 @@ import { SaleData } from '../types';
  * it to a Google Sheet.
  *
  * @param {SaleData} data - The sale data to be sent.
+ * @returns {Promise<boolean>} - True if the data was sent successfully or if the integration is not configured, false on a network or API error.
  */
-export const sendToGoogleSheets = async (data: SaleData): Promise<void> => {
+export const sendToGoogleSheets = async (data: SaleData): Promise<boolean> => {
     // Vite exposes environment variables prefixed with VITE_ on the import.meta.env object.
     const GOOGLE_APPS_SCRIPT_URL = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL;
 
@@ -15,8 +15,8 @@ export const sendToGoogleSheets = async (data: SaleData): Promise<void> => {
         console.warn("--- Google Sheets Integration ---");
         console.warn("VITE_GOOGLE_APPS_SCRIPT_URL is not defined. Skipping Google Sheets submission.");
         console.warn("This is normal for local development if not configured. For production, ensure this variable is set in your hosting environment (e.g., Vercel).");
-        // We don't throw an error, allowing the app to function without this integration.
-        return;
+        // The step didn't fail, it was intentionally skipped.
+        return true;
     }
     
     // Helper to format language data
@@ -81,20 +81,20 @@ export const sendToGoogleSheets = async (data: SaleData): Promise<void> => {
 
         if (!response.ok) {
             // Try to get more detailed error from the response body
-            const errorBody = await response.json().catch(() => ({ message: 'Could not parse error response body.' }));
-            const errorMessage = errorBody.message || `Request failed with status ${response.status}`;
-            throw new Error(`Google Sheets API Error: ${errorMessage}`);
+            const errorBody = await response.text();
+            console.error(`Google Sheets API Error: Request failed with status ${response.status}. Response: ${errorBody}`);
+            return false;
         }
 
         console.log('Data successfully sent to Google Sheets.');
+        return true;
 
     } catch (error) {
         console.error('Error in sendToGoogleSheets:', error);
-        // Re-throw to be caught by the calling function in App.tsx
         // Provide a more user-friendly message for common network errors
         if (error instanceof TypeError) { // Often indicates a network or CORS issue
-             throw new Error("A network error occurred. Please check your connection or the backend script's CORS configuration.");
+             console.error("A network error occurred. This could be a connection issue or, more likely, a CORS problem. Ensure the Google Apps Script is deployed correctly with CORS headers and 'Access-Control-Allow-Origin' set to '*' or your Vercel domain.");
         }
-        throw error;
+        return false;
     }
 };
