@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
-import { SaleData, PaymentSystem, LanguageOptions, ClientType } from '../types';
+import { SaleData, PaymentSystem, ClientType } from '../types';
 import { PAYMENT_OPTIONS, CLIENT_TYPE_OPTIONS } from '../constants';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -62,8 +61,8 @@ const Fieldset: React.FC<{ legend: string; children: React.ReactNode }> = ({ leg
 // --- Main Form Component ---
 
 interface DataEntryFormProps {
-    initialData: SaleData;
-    onSubmit: (data: SaleData) => void;
+    initialData: Omit<SaleData, 'id'> & { id?: string };
+    onSubmit: (data: Omit<SaleData, 'id'>, fileObjects: { [key: string]: File }) => void;
     onCancel: () => void;
     isLoading: boolean;
     loadingMessage: string | null;
@@ -71,11 +70,13 @@ interface DataEntryFormProps {
 }
 
 export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSubmit, onCancel, isLoading, loadingMessage, isEditMode }) => {
-    const [formData, setFormData] = useState<SaleData>(initialData);
+    const [formData, setFormData] = useState(initialData);
+    const [fileObjects, setFileObjects] = useState<{ [key: string]: File }>({});
     const { t } = useLanguage();
 
     useEffect(() => {
         setFormData(initialData);
+        setFileObjects({}); // Reset files when initial data changes
     }, [initialData]);
 
     const calculateInstallmentPrice = useCallback(() => {
@@ -107,12 +108,6 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
              return;
         }
 
-        if (type === 'file') {
-            const file = (e.target as HTMLInputElement).files?.[0];
-            setFormData(prev => ({ ...prev, [name]: file ? file.name : '' }));
-            return;
-        }
-
         const isNumericField = ['installments', 'downPayment', 'totalProductPrice'].includes(name);
 
         setFormData(prev => ({
@@ -134,15 +129,30 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
     
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, files } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: files && files.length > 0 ? files[0].name : '',
-        }));
+        if (files && files.length > 0) {
+            const file = files[0];
+            setFormData(prev => ({
+                ...prev,
+                [name]: file.name,
+            }));
+            setFileObjects(prev => ({
+                ...prev,
+                [name]: file
+            }));
+        } else {
+             setFormData(prev => ({
+                ...prev,
+                [name]: '',
+            }));
+             const newFileObjects = {...fileObjects};
+             delete newFileObjects[name];
+             setFileObjects(newFileObjects);
+        }
     };
     
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSubmit(formData);
+        onSubmit(formData, fileObjects);
     }
 
     const twoSidedUpload = (titleKey: string, frontName: keyof SaleData, backName: keyof SaleData) => (
@@ -150,11 +160,11 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
             <span className="block text-sm font-medium text-center text-slate-700 dark:text-slate-300 mb-2">{t(titleKey)}</span>
             <div className="grid grid-cols-2 gap-2 mt-auto">
                 <button type="button" className="relative w-full p-2 border-2 border-dashed border-slate-400 dark:border-slate-500 rounded-lg text-slate-500 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-500 transition-colors">
-                    {t('frente')} {(formData[frontName] as string) && '✓'}
+                    {t('frente')} {formData[frontName] && '✓'}
                     <input type="file" name={frontName} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} />
                 </button>
                  <button type="button" className="relative w-full p-2 border-2 border-dashed border-slate-400 dark:border-slate-500 rounded-lg text-slate-500 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-500 transition-colors">
-                    {t('verso')} {(formData[backName] as string) && '✓'}
+                    {t('verso')} {formData[backName] && '✓'}
                     <input type="file" name={backName} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} />
                 </button>
             </div>
@@ -163,14 +173,14 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
     
     const singleUploadButton = (titleKey: string, name: keyof SaleData) => (
          <button type="button" className="relative w-full p-3 border-2 border-dashed border-slate-400 dark:border-slate-500 rounded-lg text-slate-500 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-500 transition-colors">
-            {t(titleKey)} {(formData[name] as string) && '✓'}
+            {t(titleKey)} {formData[name] && '✓'}
             <input type="file" name={name} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} />
         </button>
     );
     
     const fileUploadButton = (label: string, name: keyof SaleData) => (
         <button type="button" className="relative w-full p-2 border-2 border-dashed border-slate-400 dark:border-slate-500 rounded-lg text-slate-500 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-500 transition-colors">
-            {label} {(formData[name] as string) && '✓'}
+            {label} {formData[name] && '✓'}
             <input type="file" name={name} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} />
         </button>
     );
