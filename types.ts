@@ -1,4 +1,3 @@
-
 export enum PaymentSystem {
   DIARIO = 'DIARIO',
   SEMANAL = 'SEMANAL',
@@ -13,7 +12,7 @@ export type LanguageOptions = {
 export type ClientType = 'logista' | 'funcionario' | '';
 
 export interface SaleData {
-    id: string; 
+    id?: string; 
     timestamp: string;
     clientFullName: string;
     clientCpf: string;
