@@ -48,7 +48,7 @@ export const sendToGoogleSheets = async (data: SaleData): Promise<void> => {
         data.product,
         data.paymentSystem,
         data.installments,
-        data.installmentPrice,
+        data.installmentPrice.toFixed(2),
         data.totalProductPrice,
         data.downPayment,
         `${data.paymentStartDate} ${reference1}`,
@@ -57,13 +57,13 @@ export const sendToGoogleSheets = async (data: SaleData): Promise<void> => {
         data.workAddress,
         data.homeAddress,
         data.notes,
-        data.photoStoreFileName ? 'Sí' : 'No',
-        data.photoHomeFileName ? 'Sí' : 'No',
+        data.photoStoreFileName || 'No',
+        data.photoHomeFileName || 'No',
         '', // Placeholder for 'FOTO CARA COM O PRODUTO'
-        `Frente: ${data.photoIdFrontFileName ? 'Sí' : 'No'}, Verso: ${data.photoIdBackFileName ? 'Sí' : 'No'}`,
-        data.photoInstagramFileName ? 'Sí' : 'No',
-        `Frente: ${data.photoContractFrontFileName ? 'Sí' : 'No'}, Verso: ${data.photoContractBackFileName ? 'Sí' : 'No'}`,
-        data.photoPhoneCodeFileName ? 'Sí' : 'No',
+        `Frente: ${data.photoIdFrontFileName || 'No'}, Verso: ${data.photoIdBackFileName || 'No'}`,
+        data.photoInstagramFileName || 'No',
+        `Frente: ${data.photoContractFrontFileName || 'No'}, Verso: ${data.photoContractBackFileName || 'No'}`,
+        data.photoPhoneCodeFileName || 'No',
         data.workLocation,
         data.homeLocation,
     ];
@@ -71,20 +71,19 @@ export const sendToGoogleSheets = async (data: SaleData): Promise<void> => {
     try {
         const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
             method: 'POST',
-            // Using redirect:'follow' is important for Apps Script web apps
+            mode: 'cors', // Explicitly set mode for clarity
             redirect: 'follow', 
             headers: {
-                // The 'Content-Type' header is required, but its value doesn't strictly matter
-                // for this Apps Script setup, as we read the raw text content.
                 'Content-Type': 'application/json',
             },
-            // We stringify the data to send it as the request body.
             body: JSON.stringify({ rowData }),
         });
 
         if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Google Sheets API Error (${response.status}): ${errorText}`);
+            // Try to get more detailed error from the response body
+            const errorBody = await response.json().catch(() => ({ message: 'Could not parse error response body.' }));
+            const errorMessage = errorBody.message || `Request failed with status ${response.status}`;
+            throw new Error(`Google Sheets API Error: ${errorMessage}`);
         }
 
         console.log('Data successfully sent to Google Sheets.');
@@ -92,6 +91,10 @@ export const sendToGoogleSheets = async (data: SaleData): Promise<void> => {
     } catch (error) {
         console.error('Error in sendToGoogleSheets:', error);
         // Re-throw to be caught by the calling function in App.tsx
+        // Provide a more user-friendly message for common network errors
+        if (error instanceof TypeError) { // Often indicates a network or CORS issue
+             throw new Error("A network error occurred. Please check your connection or the backend script's CORS configuration.");
+        }
         throw error;
     }
 };
