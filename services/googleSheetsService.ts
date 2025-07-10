@@ -1,100 +1,37 @@
 import { SaleData } from '../types';
 
 /**
- * Sends sale data to a secure Google Apps Script endpoint which then appends
- * it to a Google Sheet.
+ * Fetches the list of all clients from a secure, read-only Google Apps Script endpoint.
  *
- * @param {SaleData} data - The sale data to be sent.
- * @returns {Promise<boolean>} - True if the data was sent successfully or if the integration is not configured, false on a network or API error.
+ * @returns {Promise<SaleData[]>} - A promise that resolves to an array of client data.
+ * @throws {Error} - Throws an error if the API endpoint is not configured or if the fetch fails.
  */
-export const sendToGoogleSheets = async (data: SaleData): Promise<boolean> => {
-    // Vite exposes environment variables prefixed with VITE_ on the import.meta.env object.
-    const GOOGLE_APPS_SCRIPT_URL = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL;
+export const fetchClients = async (): Promise<SaleData[]> => {
+    const GOOGLE_SHEETS_READ_URL = import.meta.env.VITE_GOOGLE_SHEETS_READ_URL;
 
-    if (!GOOGLE_APPS_SCRIPT_URL) {
-        console.warn("--- Google Sheets Integration ---");
-        console.warn("VITE_GOOGLE_APPS_SCRIPT_URL is not defined. Skipping Google Sheets submission.");
-        console.warn("This is normal for local development if not configured. For production, ensure this variable is set in your hosting environment (e.g., Vercel).");
-        // The step didn't fail, it was intentionally skipped.
-        return true;
+    if (!GOOGLE_SHEETS_READ_URL) {
+        console.error("VITE_GOOGLE_SHEETS_READ_URL is not defined. Cannot fetch client list.");
+        throw new Error("Application is not configured to fetch client data.");
     }
     
-    // Helper to format language data
-    const languages = Object.entries(data.languages)
-        .filter(([, v]) => v)
-        .map(([k]) => k.toUpperCase())
-        .join(', ');
-
-    // Helper to split full name into first and last name
-    const nameParts = data.clientFullName.trim().split(/\s+/);
-    const firstName = nameParts.shift() || '';
-    const lastName = nameParts.join(' ');
-
-    // Helper to format reference strings
-    const reference1 = `${data.reference1Name} (${data.reference1Relationship})`;
-    const reference2 = `${data.reference2Name} (${data.reference2Relationship})`;
-
-    // The order of this array MUST match the column order in the Google Sheet.
-    const rowData = [
-        data.timestamp,
-        '', // Placeholder for Email, as per sheet structure
-        data.vendedor,
-        data.clientCpf,
-        languages,
-        firstName,
-        lastName,
-        data.purchaseDate,
-        data.phone,
-        data.product,
-        data.paymentSystem,
-        data.installments,
-        data.installmentPrice.toFixed(2),
-        data.totalProductPrice,
-        data.downPayment,
-        `${data.paymentStartDate} ${reference1}`,
-        reference2,
-        data.storeName,
-        data.workAddress,
-        data.homeAddress,
-        data.notes,
-        data.photoStoreFileName || 'No',
-        data.photoHomeFileName || 'No',
-        '', // Placeholder for 'FOTO CARA COM O PRODUTO'
-        `Frente: ${data.photoIdFrontFileName || 'No'}, Verso: ${data.photoIdBackFileName || 'No'}`,
-        data.photoInstagramFileName || 'No',
-        `Frente: ${data.photoContractFrontFileName || 'No'}, Verso: ${data.photoContractBackFileName || 'No'}`,
-        data.photoPhoneCodeFileName || 'No',
-        data.workLocation,
-        data.homeLocation,
-    ];
-    
     try {
-        const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
-            method: 'POST',
-            mode: 'cors', // Explicitly set mode for clarity
-            redirect: 'follow', 
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ rowData }),
-        });
+        const response = await fetch(GOOGLE_SHEETS_READ_URL);
 
         if (!response.ok) {
-            // Try to get more detailed error from the response body
-            const errorBody = await response.text();
-            console.error(`Google Sheets API Error: Request failed with status ${response.status}. Response: ${errorBody}`);
-            return false;
+            throw new Error(`Failed to fetch clients. Server responded with status ${response.status}`);
         }
 
-        console.log('Data successfully sent to Google Sheets.');
-        return true;
+        const data = await response.json();
+
+        if (data.error) {
+             throw new Error(`API returned an error: ${data.error}`);
+        }
+
+        // Ensure data is an array before returning
+        return Array.isArray(data) ? data : [];
 
     } catch (error) {
-        console.error('Error in sendToGoogleSheets:', error);
-        // Provide a more user-friendly message for common network errors
-        if (error instanceof TypeError) { // Often indicates a network or CORS issue
-             console.error("A network error occurred. This could be a connection issue or, more likely, a CORS problem. Ensure the Google Apps Script is deployed correctly with CORS headers and 'Access-Control-Allow-Origin' set to '*' or your Vercel domain.");
-        }
-        return false;
+        console.error("Error during fetchClients:", error);
+        throw error; // Re-throw the error to be caught by the calling component
     }
 };
