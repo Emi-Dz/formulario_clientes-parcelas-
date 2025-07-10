@@ -1,6 +1,6 @@
 {
-  "name": "formulario lojista (vercel y sheets)",
-  "description": "A responsive web application for entering client and sales data, which automatically calculates totals, generates a downloadable Excel summary, and is structured for easy export to Google Sheets.",
+  "name": "n8n Client Form",
+  "description": "A responsive web application for entering client and sales data. Submits all form data and images to n8n workflows for processing and retrieves the client list directly from a Google Sheet.",
   "requestFramePermissions": [],
   "prompt": ""
 }
