@@ -1,0 +1,6 @@
+{
+  "name": "formulario lojista (vercel y sheets)",
+  "description": "A responsive web application for entering client and sales data, which automatically calculates totals, generates a downloadable Excel summary, and is structured for easy export to Google Sheets.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}

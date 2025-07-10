@@ -1,0 +1,136 @@
+import React, { useState, useCallback, useEffect } from 'react';
+import { Header } from './components/Header';
+import { SaleData } from './types';
+import { generateExcel } from './services/excelGenerator';
+import { sendToGoogleSheets } from './services/googleSheetsService';
+import * as clientStore from './services/clientStore';
+import { HomePage } from './pages/HomePage';
+import { ClientListPage } from './pages/ClientListPage';
+import { ClientFormPage } from './pages/ClientFormPage';
+import { LanguageProvider, useLanguage } from './context/LanguageContext';
+
+type View = 'home' | 'list' | 'form';
+
+const AppContent: React.FC = () => {
+    const [view, setView] = useState<View>('home');
+    const [clients, setClients] = useState<SaleData[]>([]);
+    const [editingClientId, setEditingClientId] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [error, setError] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const { t } = useLanguage();
+
+    useEffect(() => {
+        setClients(clientStore.getClients());
+    }, []);
+    
+    const handleGoHome = () => setView('home');
+    const handleGoToList = () => setView('list');
+    const handleGoToNewForm = () => {
+        setEditingClientId(null);
+        setView('form');
+    };
+    const handleGoToEditForm = (id: string) => {
+        setEditingClientId(id);
+        setView('form');
+    };
+    
+    const showSuccess = (message: string) => {
+        setSuccessMessage(message);
+        setTimeout(() => setSuccessMessage(null), 5000);
+    };
+
+    const showError = (message: string) => {
+        setError(message);
+        setTimeout(() => setError(null), 5000);
+    }
+
+    const handleSave = useCallback(async (formData: SaleData) => {
+        setIsLoading(true);
+        setError(null);
+        setSuccessMessage(null);
+
+        try {
+            const isEditing = !!formData.id;
+
+            const finalData = {
+                ...formData,
+                timestamp: formData.timestamp || new Date().toLocaleString('es-AR', { hour12: false })
+            };
+            
+            // 1. Send to Google Sheets (simulated)
+            await sendToGoogleSheets(finalData);
+
+            // 2. Save to LocalStorage
+            if (isEditing) {
+                const updatedClients = clientStore.updateClient(finalData);
+                setClients(updatedClients);
+                showSuccess(t('successUpdate', { clientName: finalData.clientFullName }));
+            } else {
+                const newClient = clientStore.addClient(finalData);
+                setClients(prev => [...prev, newClient]);
+                showSuccess(t('successNew'));
+            }
+
+            // 3. Generate and download Excel file
+            generateExcel(finalData);
+
+            // 4. Navigate to list view
+            setView('list');
+
+        } catch (err) {
+            console.error(err);
+            const errorMessage = err instanceof Error ? err.message : t('errorUnknown');
+            showError(`${t('errorPrefix')}: ${errorMessage}`);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [t]);
+
+    const renderView = () => {
+        switch (view) {
+            case 'list':
+                return <ClientListPage clients={clients} onEdit={handleGoToEditForm} onNew={handleGoToNewForm} />;
+            case 'form':
+                return (
+                    <ClientFormPage 
+                        editingClientId={editingClientId}
+                        onSave={handleSave}
+                        onCancel={handleGoToList}
+                        isLoading={isLoading}
+                    />
+                );
+            case 'home':
+            default:
+                return <HomePage onNewClient={handleGoToNewForm} onViewClients={handleGoToList} />;
+        }
+    }
+
+    return (
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-sans">
+            <Header onGoHome={handleGoHome} />
+            <main className="container mx-auto p-4 md:p-8">
+                {successMessage && (
+                    <div className="mb-4 p-4 bg-green-100 dark:bg-green-900 border border-green-400 dark:border-green-600 text-green-700 dark:text-green-200 rounded-lg">
+                        {successMessage}
+                    </div>
+                )}
+                {error && (
+                    <div className="mb-4 p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 rounded-lg">
+                        {error}
+                    </div>
+                )}
+                {renderView()}
+            </main>
+        </div>
+    );
+};
+
+const App: React.FC = () => (
+    <LanguageProvider>
+        <AppContent />
+    </LanguageProvider>
+);
+
+
+export default App;
