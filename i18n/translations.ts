@@ -1,4 +1,3 @@
-
 export const translations: { [key: string]: { [key: string]: string } } = {
     es: {
         // Header
@@ -97,6 +96,9 @@ export const translations: { [key: string]: { [key: string]: string } } = {
         // Form Buttons & Messages
         cancel: 'Cancelar',
         loading: 'Procesando...',
+        loading_sheets: 'Enviando a Google Sheets...',
+        loading_saving: 'Guardando cliente...',
+        loading_excel: 'Generando Excel...',
         saveChanges: 'Guardar Cambios',
         submitAndGenerate: 'Cargar y Generar Excel',
         
@@ -105,6 +107,7 @@ export const translations: { [key: string]: { [key: string]: string } } = {
         successNew: 'Nuevo cliente cargado exitosamente!',
         errorPrefix: 'Error',
         errorUnknown: 'Ocurrió un error desconocido.',
+        error_sheets_fallback: 'Error al conectar con Google Sheets. El cliente se guardó localmente de todas formas.',
 
     },
     pt: {
@@ -203,6 +206,9 @@ export const translations: { [key: string]: { [key: string]: string } } = {
         // Form Buttons & Messages
         cancel: 'Cancelar',
         loading: 'Processando...',
+        loading_sheets: 'Enviando para Google Sheets...',
+        loading_saving: 'Salvando cliente...',
+        loading_excel: 'Gerando Excel...',
         saveChanges: 'Salvar Alterações',
         submitAndGenerate: 'Carregar e Gerar Excel',
 
@@ -211,6 +217,6 @@ export const translations: { [key: string]: { [key: string]: string } } = {
         successNew: 'Novo cliente carregado com sucesso!',
         errorPrefix: 'Erro',
         errorUnknown: 'Ocorreu um erro desconhecido.',
-        
+        error_sheets_fallback: 'Erro ao conectar com o Google Sheets. O cliente foi salvo localmente de qualquer maneira.',
     },
 };
