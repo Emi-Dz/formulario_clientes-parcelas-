@@ -1,13 +1,12 @@
-
 import React, { useMemo } from 'react';
 import { DataEntryForm } from '../components/DataEntryForm';
 import { SaleData, PaymentSystem } from '../types';
-import * as clientStore from '../services/clientStore';
 import { useLanguage } from '../context/LanguageContext';
 
 interface ClientFormPageProps {
+    clients: SaleData[];
     editingClientId: string | null;
-    onSave: (data: SaleData) => void;
+    onSave: (data: Omit<SaleData, 'id'>, fileObjects: { [key: string]: File }) => void;
     onCancel: () => void;
     isLoading: boolean;
     loadingMessage: string | null;
@@ -31,7 +30,7 @@ const emptyFormData: Omit<SaleData, 'id'> = {
     reference1Relationship: '',
     reference2Name: '',
     reference2Relationship: '',
-    languages: { es: true, pt: false }, // Default to Spanish, no English
+    languages: { es: true, pt: false }, // Default to Spanish
     storeName: '',
     workLocation: '',
     workAddress: '',
@@ -54,12 +53,12 @@ const emptyFormData: Omit<SaleData, 'id'> = {
     notes: '',
 };
 
-export const ClientFormPage: React.FC<ClientFormPageProps> = ({ editingClientId, onSave, onCancel, isLoading, loadingMessage }) => {
+export const ClientFormPage: React.FC<ClientFormPageProps> = ({ clients, editingClientId, onSave, onCancel, isLoading, loadingMessage }) => {
     const { t } = useLanguage();
 
     const initialData = useMemo(() => {
         if (editingClientId) {
-            const clientData = clientStore.getClient(editingClientId);
+            const clientData = clients.find(c => c.id === editingClientId);
             if (clientData) {
                 // Ensure languages object is valid and merge with empty form
                 // to gracefully handle data from older app versions.
@@ -69,11 +68,9 @@ export const ClientFormPage: React.FC<ClientFormPageProps> = ({ editingClientId,
                 };
                 return { ...emptyFormData, ...clientData, languages };
             }
-            // Add the id field to the empty form data if the client is not found
-            return { ...emptyFormData, id: editingClientId };
         }
-        return { ...emptyFormData, id: '' };
-    }, [editingClientId]);
+        return { ...emptyFormData, id: undefined }; // Return with no ID for a new form
+    }, [editingClientId, clients]);
 
     const isEditMode = !!editingClientId;
 
@@ -83,7 +80,7 @@ export const ClientFormPage: React.FC<ClientFormPageProps> = ({ editingClientId,
                 {isEditMode ? t('formTitleEdit') : t('formTitleNew')}
             </h1>
             <DataEntryForm
-                initialData={initialData as SaleData}
+                initialData={initialData}
                 onSubmit={onSave}
                 onCancel={onCancel}
                 isLoading={isLoading}
