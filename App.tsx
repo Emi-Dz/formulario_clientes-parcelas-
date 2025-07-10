@@ -16,6 +16,7 @@ const AppContent: React.FC = () => {
     const [clients, setClients] = useState<SaleData[]>([]);
     const [editingClientId, setEditingClientId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [loadingMessage, setLoadingMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const { t } = useLanguage();
@@ -42,7 +43,7 @@ const AppContent: React.FC = () => {
 
     const showError = (message: string) => {
         setError(message);
-        setTimeout(() => setError(null), 5000);
+        setTimeout(() => setError(null), 8000);
     }
 
     const handleSave = useCallback(async (formData: SaleData) => {
@@ -58,10 +59,16 @@ const AppContent: React.FC = () => {
                 timestamp: formData.timestamp || new Date().toLocaleString('es-AR', { hour12: false })
             };
             
-            // 1. Send to Google Sheets (simulated)
-            await sendToGoogleSheets(finalData);
+            // 1. Send to Google Sheets and handle failure gracefully
+            setLoadingMessage(t('loading_sheets'));
+            const sheetsSuccess = await sendToGoogleSheets(finalData);
+            if (!sheetsSuccess) {
+                 // Show a non-blocking error, the process will continue
+                showError(t('error_sheets_fallback'));
+            }
 
             // 2. Save to LocalStorage
+            setLoadingMessage(t('loading_saving'));
             if (isEditing) {
                 const updatedClients = clientStore.updateClient(finalData);
                 setClients(updatedClients);
@@ -73,6 +80,7 @@ const AppContent: React.FC = () => {
             }
 
             // 3. Generate and download Excel file
+            setLoadingMessage(t('loading_excel'));
             generateExcel(finalData);
 
             // 4. Navigate to list view
@@ -84,6 +92,7 @@ const AppContent: React.FC = () => {
             showError(`${t('errorPrefix')}: ${errorMessage}`);
         } finally {
             setIsLoading(false);
+            setLoadingMessage(null);
         }
     }, [t]);
 
@@ -98,6 +107,7 @@ const AppContent: React.FC = () => {
                         onSave={handleSave}
                         onCancel={handleGoToList}
                         isLoading={isLoading}
+                        loadingMessage={loadingMessage}
                     />
                 );
             case 'home':
