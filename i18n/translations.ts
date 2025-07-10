@@ -23,6 +23,7 @@ export const translations: { [key: string]: { [key: string]: string } } = {
         colPurchaseDate: 'Fecha Compra',
         colEdit: 'Editar',
         editButton: 'Editar',
+        loading_clients: 'Cargando clientes desde Google Sheets...',
 
         // Form Page Titles
         formTitleNew: 'Cargar Nuevo Cliente',
@@ -96,18 +97,20 @@ export const translations: { [key: string]: { [key: string]: string } } = {
         // Form Buttons & Messages
         cancel: 'Cancelar',
         loading: 'Procesando...',
-        loading_sheets: 'Enviando a Google Sheets...',
-        loading_saving: 'Guardando cliente...',
-        loading_excel: 'Generando Excel...',
+        loading_n8n_form: 'Enviando formulario a n8n...',
+        loading_n8n_report: 'Enviando reporte a n8n...',
         saveChanges: 'Guardar Cambios',
-        submitAndGenerate: 'Cargar y Generar Excel',
+        submitAndGenerate: 'Enviar a n8n',
         
         // App Level Messages
         successUpdate: 'Cliente {{clientName}} actualizado exitosamente!',
-        successNew: 'Nuevo cliente cargado exitosamente!',
+        successNew: 'Datos enviados a n8n exitosamente!',
         errorPrefix: 'Error',
         errorUnknown: 'Ocurrió un error desconocido.',
-        error_sheets_fallback: 'Error al conectar con Google Sheets. El cliente se guardó localmente de todas formas.',
+        error_n8n_form: 'Fallo al enviar el formulario principal a n8n.',
+        error_n8n_report: 'Fallo al enviar el reporte a n8n.',
+        error_n8n_all_failed: 'Error: No se pudo enviar datos a ningún flujo de n8n.',
+        errorFetchClients: 'No se pudo cargar la lista de clientes desde Google Sheets',
 
     },
     pt: {
@@ -134,6 +137,7 @@ export const translations: { [key: string]: { [key: string]: string } } = {
         colPurchaseDate: 'Data da Compra',
         colEdit: 'Editar',
         editButton: 'Editar',
+        loading_clients: 'Carregando clientes do Google Sheets...',
         
         // Form Page Titles
         formTitleNew: 'Carregar Novo Cliente',
@@ -206,17 +210,19 @@ export const translations: { [key: string]: { [key: string]: string } } = {
         // Form Buttons & Messages
         cancel: 'Cancelar',
         loading: 'Processando...',
-        loading_sheets: 'Enviando para Google Sheets...',
-        loading_saving: 'Salvando cliente...',
-        loading_excel: 'Gerando Excel...',
+        loading_n8n_form: 'Enviando formulário para n8n...',
+        loading_n8n_report: 'Enviando relatório para n8n...',
         saveChanges: 'Salvar Alterações',
-        submitAndGenerate: 'Carregar e Gerar Excel',
+        submitAndGenerate: 'Enviar para n8n',
 
         // App Level Messages
         successUpdate: 'Cliente {{clientName}} atualizado com sucesso!',
-        successNew: 'Novo cliente carregado com sucesso!',
+        successNew: 'Dados enviados para n8n com sucesso!',
         errorPrefix: 'Erro',
         errorUnknown: 'Ocorreu um erro desconhecido.',
-        error_sheets_fallback: 'Erro ao conectar com o Google Sheets. O cliente foi salvo localmente de qualquer maneira.',
+        error_n8n_form: 'Falha ao enviar o formulário principal para n8n.',
+        error_n8n_report: 'Falha ao enviar o relatório para n8n.',
+        error_n8n_all_failed: 'Erro: Não foi possível enviar dados para nenhum fluxo de trabalho do n8n.',
+        errorFetchClients: 'Não foi possível carregar a lista de clientes do Google Sheets.',
     },
 };
