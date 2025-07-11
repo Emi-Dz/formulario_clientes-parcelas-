@@ -1,11 +1,10 @@
-
 export enum PaymentSystem {
   DIARIO = 'DIARIO',
   SEMANAL = 'SEMANAL',
   MENSAL = 'MENSAL',
 }
 
-export type Language = 'es' | 'pt';
+export type Language = 'es' | 'pt' | '';
 
 export type ClientType = 'logista' | 'funcionario' | '';
 
