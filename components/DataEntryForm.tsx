@@ -177,7 +177,8 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
                     {CLIENT_TYPE_OPTIONS.map(opt => <option key={opt} value={opt}>{t(opt)}</option>)}
                 </Input>
                 
-                <Input as="select" label={t('language')} id="language" name="language" value={formData.language} onChange={handleChange}>
+                <Input as="select" label={t('language')} id="language" name="language" value={formData.language} onChange={handleChange} required>
+                    <option value="">{t('placeholder_select')}</option>
                     <option value="es">{t('espanol')}</option>
                     <option value="pt">{t('portugues')}</option>
                 </Input>
