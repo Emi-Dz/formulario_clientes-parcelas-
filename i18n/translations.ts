@@ -23,7 +23,6 @@ export const translations: { [key: string]: { [key: string]: string } } = {
         colPurchaseDate: 'Fecha Compra',
         colEdit: 'Editar',
         editButton: 'Editar',
-        loading_clients: 'Cargando clientes desde Google Sheets...',
 
         // Form Page Titles
         formTitleNew: 'Cargar Nuevo Cliente',
@@ -53,7 +52,7 @@ export const translations: { [key: string]: { [key: string]: string } } = {
         reference2Relationship: 'Parentesco / Teléfono',
         espanol: 'Español',
         portugues: 'Portugués',
-        languages: 'Idiomas del Cliente',
+        language: 'Idioma del Cliente',
         storeName: 'Nombre Tienda',
         localizacaoTrab: 'Ubicación Trabajo',
         enderecoTrab: 'Dirección Trabajo',
@@ -92,25 +91,24 @@ export const translations: { [key: string]: { [key: string]: string } } = {
         placeholder_refRelationship: 'Ej: Esposa / 21 98765-4321',
         placeholder_instagram: 'Ej: @usuario o facebook.com/usuario',
         placeholder_notes: 'Escriba cualquier observación adicional aquí...',
+        placeholder_select: 'Seleccione una opción...',
 
 
         // Form Buttons & Messages
         cancel: 'Cancelar',
         loading: 'Procesando...',
-        loading_n8n_form: 'Enviando formulario a n8n...',
-        loading_n8n_report: 'Enviando reporte a n8n...',
+        loading_sheets: 'Enviando a Google Sheets...',
+        loading_saving: 'Guardando cliente...',
+        loading_excel: 'Generando Excel...',
         saveChanges: 'Guardar Cambios',
-        submitAndGenerate: 'Enviar a n8n',
+        submitAndGenerate: 'Cargar y Generar Excel',
         
         // App Level Messages
         successUpdate: 'Cliente {{clientName}} actualizado exitosamente!',
-        successNew: 'Datos enviados a n8n exitosamente!',
+        successNew: 'Nuevo cliente cargado exitosamente!',
         errorPrefix: 'Error',
         errorUnknown: 'Ocurrió un error desconocido.',
-        error_n8n_form: 'Fallo al enviar el formulario principal a n8n.',
-        error_n8n_report: 'Fallo al enviar el reporte a n8n.',
-        error_n8n_all_failed: 'Error: No se pudo enviar datos a ningún flujo de n8n.',
-        errorFetchClients: 'No se pudo cargar la lista de clientes desde Google Sheets',
+        error_sheets_fallback: 'Error al conectar con Google Sheets. El cliente se guardó localmente de todas formas.',
 
     },
     pt: {
@@ -137,7 +135,6 @@ export const translations: { [key: string]: { [key: string]: string } } = {
         colPurchaseDate: 'Data da Compra',
         colEdit: 'Editar',
         editButton: 'Editar',
-        loading_clients: 'Carregando clientes do Google Sheets...',
         
         // Form Page Titles
         formTitleNew: 'Carregar Novo Cliente',
@@ -167,7 +164,7 @@ export const translations: { [key: string]: { [key: string]: string } } = {
         reference2Relationship: 'Parentesco / Telefone',
         espanol: 'Espanhol',
         portugues: 'Português',
-        languages: 'Idiomas do Cliente',
+        language: 'Idioma do Cliente',
         storeName: 'Nome da Loja',
         localizacaoTrab: 'Localização Trab.',
         enderecoTrab: 'Endereço Trab.',
@@ -206,23 +203,22 @@ export const translations: { [key: string]: { [key: string]: string } } = {
         placeholder_refRelationship: 'Ex: Esposa / 21 98765-4321',
         placeholder_instagram: 'Ex: @usuario ou facebook.com/usuario',
         placeholder_notes: 'Escreva quaisquer observações adicionais aqui...',
+        placeholder_select: 'Selecione uma opção...',
 
         // Form Buttons & Messages
         cancel: 'Cancelar',
         loading: 'Processando...',
-        loading_n8n_form: 'Enviando formulário para n8n...',
-        loading_n8n_report: 'Enviando relatório para n8n...',
+        loading_sheets: 'Enviando para Google Sheets...',
+        loading_saving: 'Salvando cliente...',
+        loading_excel: 'Gerando Excel...',
         saveChanges: 'Salvar Alterações',
-        submitAndGenerate: 'Enviar para n8n',
+        submitAndGenerate: 'Carregar e Gerar Excel',
 
         // App Level Messages
         successUpdate: 'Cliente {{clientName}} atualizado com sucesso!',
-        successNew: 'Dados enviados para n8n com sucesso!',
+        successNew: 'Novo cliente carregado com sucesso!',
         errorPrefix: 'Erro',
         errorUnknown: 'Ocorreu um erro desconhecido.',
-        error_n8n_form: 'Falha ao enviar o formulário principal para n8n.',
-        error_n8n_report: 'Falha ao enviar o relatório para n8n.',
-        error_n8n_all_failed: 'Erro: Não foi possível enviar dados para nenhum fluxo de trabalho do n8n.',
-        errorFetchClients: 'Não foi possível carregar a lista de clientes do Google Sheets.',
+        error_sheets_fallback: 'Erro ao conectar com o Google Sheets. O cliente foi salvo localmente de qualquer maneira.',
     },
 };
