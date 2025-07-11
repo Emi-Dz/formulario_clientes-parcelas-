@@ -1,12 +1,13 @@
+
 import React, { useMemo } from 'react';
 import { DataEntryForm } from '../components/DataEntryForm';
-import { SaleData, PaymentSystem } from '../types';
+import { SaleData, PaymentSystem, Language } from '../types';
+import * as clientStore from '../services/clientStore';
 import { useLanguage } from '../context/LanguageContext';
 
 interface ClientFormPageProps {
-    clients: SaleData[];
     editingClientId: string | null;
-    onSave: (data: Omit<SaleData, 'id'>, fileObjects: { [key: string]: File }) => void;
+    onSave: (data: SaleData) => void;
     onCancel: () => void;
     isLoading: boolean;
     loadingMessage: string | null;
@@ -30,7 +31,7 @@ const emptyFormData: Omit<SaleData, 'id'> = {
     reference1Relationship: '',
     reference2Name: '',
     reference2Relationship: '',
-    languages: { es: true, pt: false }, // Default to Spanish
+    language: 'es',
     storeName: '',
     workLocation: '',
     workAddress: '',
@@ -53,24 +54,26 @@ const emptyFormData: Omit<SaleData, 'id'> = {
     notes: '',
 };
 
-export const ClientFormPage: React.FC<ClientFormPageProps> = ({ clients, editingClientId, onSave, onCancel, isLoading, loadingMessage }) => {
+export const ClientFormPage: React.FC<ClientFormPageProps> = ({ editingClientId, onSave, onCancel, isLoading, loadingMessage }) => {
     const { t } = useLanguage();
 
     const initialData = useMemo(() => {
         if (editingClientId) {
-            const clientData = clients.find(c => c.id === editingClientId);
+            const clientData = clientStore.getClient(editingClientId) as any; // Use any for easier migration
             if (clientData) {
-                // Ensure languages object is valid and merge with empty form
-                // to gracefully handle data from older app versions.
-                const languages = {
-                    es: (clientData.languages && clientData.languages.es) || false,
-                    pt: (clientData.languages && clientData.languages.pt) || false,
-                };
-                return { ...emptyFormData, ...clientData, languages };
+                // Gracefully migrate from old `languages` object to new `language` string.
+                const migratedData = { ...clientData };
+                if (clientData.languages && typeof clientData.languages === 'object') {
+                    migratedData.language = clientData.languages.pt ? 'pt' : 'es';
+                    delete migratedData.languages;
+                }
+                return { ...emptyFormData, ...migratedData };
             }
+             // If client not found, shouldn't happen but good to handle
+            return { ...emptyFormData, id: editingClientId };
         }
-        return { ...emptyFormData, id: undefined }; // Return with no ID for a new form
-    }, [editingClientId, clients]);
+        return { ...emptyFormData, id: '' };
+    }, [editingClientId]);
 
     const isEditMode = !!editingClientId;
 
@@ -80,7 +83,7 @@ export const ClientFormPage: React.FC<ClientFormPageProps> = ({ clients, editing
                 {isEditMode ? t('formTitleEdit') : t('formTitleNew')}
             </h1>
             <DataEntryForm
-                initialData={initialData}
+                initialData={initialData as SaleData}
                 onSubmit={onSave}
                 onCancel={onCancel}
                 isLoading={isLoading}
