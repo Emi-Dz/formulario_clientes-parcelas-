@@ -31,7 +31,7 @@ const emptyFormData: Omit<SaleData, 'id'> = {
     reference1Relationship: '',
     reference2Name: '',
     reference2Relationship: '',
-    language: 'es',
+    language: '',
     storeName: '',
     workLocation: '',
     workAddress: '',
