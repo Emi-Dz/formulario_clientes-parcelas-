@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { SaleData, PaymentSystem, ClientType } from '../types';
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { SaleData, PaymentSystem, Language, ClientType } from '../types';
 import { PAYMENT_OPTIONS, CLIENT_TYPE_OPTIONS } from '../constants';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -29,24 +30,6 @@ const Input: React.FC<InputProps> = ({ label, id, wrapperClass, as = 'input', ..
     );
 };
 
-interface CheckboxProps extends React.InputHTMLAttributes<HTMLInputElement> {
-    label: string;
-}
-const Checkbox: React.FC<CheckboxProps> = ({ label, id, ...props }) => (
-    <div className="flex items-center">
-        <input
-            id={id}
-            type="checkbox"
-            {...props}
-            className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-        />
-        <label htmlFor={id} className="ml-3 block text-sm font-medium text-slate-700 dark:text-slate-300">
-            {label}
-        </label>
-    </div>
-);
-
-
 const Fieldset: React.FC<{ legend: string; children: React.ReactNode }> = ({ legend, children }) => (
     <fieldset className="border border-slate-300 dark:border-slate-600 p-4 rounded-lg">
         <legend className="px-2 text-sm font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
@@ -61,8 +44,8 @@ const Fieldset: React.FC<{ legend: string; children: React.ReactNode }> = ({ leg
 // --- Main Form Component ---
 
 interface DataEntryFormProps {
-    initialData: Omit<SaleData, 'id'> & { id?: string };
-    onSubmit: (data: Omit<SaleData, 'id'>, fileObjects: { [key: string]: File }) => void;
+    initialData: SaleData;
+    onSubmit: (data: SaleData) => void;
     onCancel: () => void;
     isLoading: boolean;
     loadingMessage: string | null;
@@ -70,23 +53,24 @@ interface DataEntryFormProps {
 }
 
 export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSubmit, onCancel, isLoading, loadingMessage, isEditMode }) => {
-    const [formData, setFormData] = useState(initialData);
-    const [fileObjects, setFileObjects] = useState<{ [key: string]: File }>({});
+    const [formData, setFormData] = useState<SaleData>(initialData);
     const { t } = useLanguage();
 
     useEffect(() => {
         setFormData(initialData);
-        setFileObjects({}); // Reset files when initial data changes
     }, [initialData]);
 
-    const installmentPrice = useMemo(() => {
-        const total = Number(formData.totalProductPrice) || 0;
-        const down = Number(formData.downPayment) || 0;
-        const count = Number(formData.installments) > 0 ? Number(formData.installments) : 1;
+    const calculateInstallmentPrice = useCallback(() => {
+        const total = formData.totalProductPrice || 0;
+        const down = formData.downPayment || 0;
+        const count = formData.installments > 0 ? formData.installments : 1;
         const price = (total - down) / count;
-        return price > 0 ? price : 0;
+        setFormData(prev => ({ ...prev, installmentPrice: price > 0 ? price : 0 }));
     }, [formData.totalProductPrice, formData.downPayment, formData.installments]);
 
+    useEffect(() => {
+        calculateInstallmentPrice();
+    }, [calculateInstallmentPrice]);
 
     const formatCpf = (value: string) => {
         const onlyNumbers = value.replace(/\D/g, '');
@@ -105,6 +89,12 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
              return;
         }
 
+        if (type === 'file') {
+            const file = (e.target as HTMLInputElement).files?.[0];
+            setFormData(prev => ({ ...prev, [name]: file ? file.name : '' }));
+            return;
+        }
+
         const isNumericField = ['installments', 'downPayment', 'totalProductPrice'].includes(name);
 
         setFormData(prev => ({
@@ -112,48 +102,18 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
             [name]: isNumericField ? (value === '' ? '' : Number(value)) : value,
         }));
     };
-
-    const handleLanguageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, checked } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            languages: {
-                ...prev.languages,
-                [name]: checked
-            }
-        }));
-    };
     
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, files } = e.target;
-        if (files && files.length > 0) {
-            const file = files[0];
-            setFormData(prev => ({
-                ...prev,
-                [name]: file.name,
-            }));
-            setFileObjects(prev => ({
-                ...prev,
-                [name]: file
-            }));
-        } else {
-             setFormData(prev => ({
-                ...prev,
-                [name]: '',
-            }));
-             const newFileObjects = {...fileObjects};
-             delete newFileObjects[name];
-             setFileObjects(newFileObjects);
-        }
+        setFormData(prev => ({
+            ...prev,
+            [name]: files && files.length > 0 ? files[0].name : '',
+        }));
     };
     
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const dataToSubmit = {
-            ...formData,
-            installmentPrice: installmentPrice,
-        };
-        onSubmit(dataToSubmit, fileObjects);
+        onSubmit(formData);
     }
 
     const twoSidedUpload = (titleKey: string, frontName: keyof SaleData, backName: keyof SaleData) => (
@@ -161,11 +121,11 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
             <span className="block text-sm font-medium text-center text-slate-700 dark:text-slate-300 mb-2">{t(titleKey)}</span>
             <div className="grid grid-cols-2 gap-2 mt-auto">
                 <button type="button" className="relative w-full p-2 border-2 border-dashed border-slate-400 dark:border-slate-500 rounded-lg text-slate-500 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-500 transition-colors">
-                    {t('frente')} {formData[frontName] && '✓'}
+                    {t('frente')} {(formData[frontName] as string) && '✓'}
                     <input type="file" name={frontName} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} />
                 </button>
                  <button type="button" className="relative w-full p-2 border-2 border-dashed border-slate-400 dark:border-slate-500 rounded-lg text-slate-500 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-500 transition-colors">
-                    {t('verso')} {formData[backName] && '✓'}
+                    {t('verso')} {(formData[backName] as string) && '✓'}
                     <input type="file" name={backName} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} />
                 </button>
             </div>
@@ -174,14 +134,14 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
     
     const singleUploadButton = (titleKey: string, name: keyof SaleData) => (
          <button type="button" className="relative w-full p-3 border-2 border-dashed border-slate-400 dark:border-slate-500 rounded-lg text-slate-500 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-500 transition-colors">
-            {t(titleKey)} {formData[name] && '✓'}
+            {t(titleKey)} {(formData[name] as string) && '✓'}
             <input type="file" name={name} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} />
         </button>
     );
     
     const fileUploadButton = (label: string, name: keyof SaleData) => (
         <button type="button" className="relative w-full p-2 border-2 border-dashed border-slate-400 dark:border-slate-500 rounded-lg text-slate-500 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-500 transition-colors">
-            {label} {formData[name] && '✓'}
+            {label} {(formData[name] as string) && '✓'}
             <input type="file" name={name} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} />
         </button>
     );
@@ -206,21 +166,21 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
                  <Input label={t('totalProductPrice')} id="totalProductPrice" name="totalProductPrice" type="number" min="0" step="0.01" value={formData.totalProductPrice} onChange={handleChange} placeholder="1250.00" />
                  <Input label={t('downPayment')} id="downPayment" name="downPayment" type="number" min="0" step="0.01" value={formData.downPayment} onChange={handleChange} placeholder="250.00" />
                  <Input label={t('installments')} id="installments" name="installments" type="number" min="1" value={formData.installments} onChange={handleChange} placeholder="10" />
-                 <Input label={t('installmentPrice')} id="installmentPrice" name="installmentPrice" type="number" value={installmentPrice.toFixed(2)} readOnly disabled />
+                 <Input label={t('installmentPrice')} id="installmentPrice" name="installmentPrice" type="number" value={formData.installmentPrice.toFixed(2)} readOnly disabled />
 
                  <Input label={t('storeName')} id="storeName" name="storeName" value={formData.storeName} onChange={handleChange} placeholder={t('placeholder_storeName')} />
                  <Input label={t('vendedor')} id="vendedor" name="vendedor" value={formData.vendedor} onChange={handleChange} placeholder={t('placeholder_vendedor')}/>
                  <Input label={t('guarantor')} id="guarantor" name="guarantor" value={formData.guarantor} onChange={handleChange} placeholder={t('placeholder_guarantor')} />
-                 <div className="flex items-center space-x-6 pt-4">
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('clientType')}:</span>
-                    <Checkbox label={t('logista')} id="type_logista" name="clientType" value="logista" checked={formData.clientType === 'logista'} onChange={(e) => setFormData(p => ({...p, clientType: e.target.value as ClientType}))} />
-                    <Checkbox label={t('funcionario')} id="type_funcio" name="clientType" value="funcionario" checked={formData.clientType === 'funcionario'} onChange={(e) => setFormData(p => ({...p, clientType: e.target.value as ClientType}))} />
-                </div>
-                <div className="flex items-center space-x-6 pt-4">
-                     <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('languages')}:</span>
-                    <Checkbox label={t('espanol')} id="lang_es" name="es" checked={formData.languages.es} onChange={handleLanguageChange} />
-                    <Checkbox label={t('portugues')} id="lang_pt" name="pt" checked={formData.languages.pt} onChange={handleLanguageChange} />
-                </div>
+                
+                 <Input as="select" label={t('clientType')} id="clientType" name="clientType" value={formData.clientType} onChange={handleChange}>
+                    <option value="">{t('placeholder_select')}</option>
+                    {CLIENT_TYPE_OPTIONS.map(opt => <option key={opt} value={opt}>{t(opt)}</option>)}
+                </Input>
+                
+                <Input as="select" label={t('language')} id="language" name="language" value={formData.language} onChange={handleChange}>
+                    <option value="es">{t('espanol')}</option>
+                    <option value="pt">{t('portugues')}</option>
+                </Input>
             </Fieldset>
             
             <Fieldset legend={t('locations')}>
