@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { SaleData, PaymentSystem, ClientType } from '../types';
 import { PAYMENT_OPTIONS, CLIENT_TYPE_OPTIONS } from '../constants';
 import { useLanguage } from '../context/LanguageContext';
@@ -79,17 +79,14 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
         setFileObjects({}); // Reset files when initial data changes
     }, [initialData]);
 
-    const calculateInstallmentPrice = useCallback(() => {
-        const total = formData.totalProductPrice || 0;
-        const down = formData.downPayment || 0;
-        const count = formData.installments > 0 ? formData.installments : 1;
+    const installmentPrice = useMemo(() => {
+        const total = Number(formData.totalProductPrice) || 0;
+        const down = Number(formData.downPayment) || 0;
+        const count = Number(formData.installments) > 0 ? Number(formData.installments) : 1;
         const price = (total - down) / count;
-        setFormData(prev => ({ ...prev, installmentPrice: price > 0 ? price : 0 }));
+        return price > 0 ? price : 0;
     }, [formData.totalProductPrice, formData.downPayment, formData.installments]);
 
-    useEffect(() => {
-        calculateInstallmentPrice();
-    }, [calculateInstallmentPrice]);
 
     const formatCpf = (value: string) => {
         const onlyNumbers = value.replace(/\D/g, '');
@@ -152,7 +149,11 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
     
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSubmit(formData, fileObjects);
+        const dataToSubmit = {
+            ...formData,
+            installmentPrice: installmentPrice,
+        };
+        onSubmit(dataToSubmit, fileObjects);
     }
 
     const twoSidedUpload = (titleKey: string, frontName: keyof SaleData, backName: keyof SaleData) => (
@@ -205,7 +206,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
                  <Input label={t('totalProductPrice')} id="totalProductPrice" name="totalProductPrice" type="number" min="0" step="0.01" value={formData.totalProductPrice} onChange={handleChange} placeholder="1250.00" />
                  <Input label={t('downPayment')} id="downPayment" name="downPayment" type="number" min="0" step="0.01" value={formData.downPayment} onChange={handleChange} placeholder="250.00" />
                  <Input label={t('installments')} id="installments" name="installments" type="number" min="1" value={formData.installments} onChange={handleChange} placeholder="10" />
-                 <Input label={t('installmentPrice')} id="installmentPrice" name="installmentPrice" type="number" value={formData.installmentPrice.toFixed(2)} readOnly disabled />
+                 <Input label={t('installmentPrice')} id="installmentPrice" name="installmentPrice" type="number" value={installmentPrice.toFixed(2)} readOnly disabled />
 
                  <Input label={t('storeName')} id="storeName" name="storeName" value={formData.storeName} onChange={handleChange} placeholder={t('placeholder_storeName')} />
                  <Input label={t('vendedor')} id="vendedor" name="vendedor" value={formData.vendedor} onChange={handleChange} placeholder={t('placeholder_vendedor')}/>
