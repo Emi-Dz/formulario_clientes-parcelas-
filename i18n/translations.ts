@@ -97,19 +97,21 @@ export const translations: { [key: string]: { [key: string]: string } } = {
         // Form Buttons & Messages
         cancel: 'Cancelar',
         loading: 'Procesando...',
-        loading_sheets: 'Enviando a Google Sheets...',
-        loading_saving: 'Guardando cliente...',
-        loading_excel: 'Generando Excel...',
+        loading_n8n_form: 'Enviando formulario...',
+        loading_n8n_report: 'Generando reporte...',
+        loading_clients: 'Cargando clientes...',
         saveChanges: 'Guardar Cambios',
-        submitAndGenerate: 'Cargar y Generar Excel',
+        submitAndGenerate: 'Cargar y Generar Docs',
         
         // App Level Messages
         successUpdate: 'Cliente {{clientName}} actualizado exitosamente!',
         successNew: 'Nuevo cliente cargado exitosamente!',
         errorPrefix: 'Error',
         errorUnknown: 'Ocurrió un error desconocido.',
-        error_sheets_fallback: 'Error al conectar con Google Sheets. El cliente se guardó localmente de todas formas.',
-
+        error_n8n_form: 'Error al enviar los datos del formulario.',
+        error_n8n_report: 'Error al generar el reporte.',
+        error_n8n_all_failed: 'Fallaron todos los envíos. Por favor, intente de nuevo.',
+        errorFetchClients: 'Error al cargar los clientes',
     },
     pt: {
         // Header
@@ -208,17 +210,20 @@ export const translations: { [key: string]: { [key: string]: string } } = {
         // Form Buttons & Messages
         cancel: 'Cancelar',
         loading: 'Processando...',
-        loading_sheets: 'Enviando para Google Sheets...',
-        loading_saving: 'Salvando cliente...',
-        loading_excel: 'Gerando Excel...',
+        loading_n8n_form: 'Enviando formulário...',
+        loading_n8n_report: 'Gerando relatório...',
+        loading_clients: 'Carregando clientes...',
         saveChanges: 'Salvar Alterações',
-        submitAndGenerate: 'Carregar e Gerar Excel',
+        submitAndGenerate: 'Carregar e Gerar Docs',
 
         // App Level Messages
         successUpdate: 'Cliente {{clientName}} atualizado com sucesso!',
         successNew: 'Novo cliente carregado com sucesso!',
         errorPrefix: 'Erro',
         errorUnknown: 'Ocorreu um erro desconhecido.',
-        error_sheets_fallback: 'Erro ao conectar com o Google Sheets. O cliente foi salvo localmente de qualquer maneira.',
+        error_n8n_form: 'Erro ao enviar os dados do formulário.',
+        error_n8n_report: 'Erro ao gerar o relatório.',
+        error_n8n_all_failed: 'Todas as submissões falharam. Por favor, tente novamente.',
+        errorFetchClients: 'Erro ao carregar os clientes',
     },
 };
