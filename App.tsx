@@ -1,8 +1,9 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Header } from './components/Header';
 import { SaleData } from './types';
-import * as n8nService from './services/n8nService';
-import * as googleSheetsService from './services/googleSheetsService';
+import { generateExcel } from './services/excelGenerator';
+import { sendToGoogleSheets } from './services/googleSheetsService';
+import * as clientStore from './services/clientStore';
 import { HomePage } from './pages/HomePage';
 import { ClientListPage } from './pages/ClientListPage';
 import { ClientFormPage } from './pages/ClientFormPage';
@@ -13,7 +14,6 @@ type View = 'home' | 'list' | 'form';
 const AppContent: React.FC = () => {
     const [view, setView] = useState<View>('home');
     const [clients, setClients] = useState<SaleData[]>([]);
-    const [isFetchingClients, setIsFetchingClients] = useState<boolean>(true);
     const [editingClientId, setEditingClientId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [loadingMessage, setLoadingMessage] = useState<string | null>(null);
@@ -21,29 +21,12 @@ const AppContent: React.FC = () => {
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const { t } = useLanguage();
 
-    const fetchClients = useCallback(async () => {
-        setIsFetchingClients(true);
-        try {
-            const fetchedClients = await googleSheetsService.fetchClients();
-            setClients(fetchedClients);
-        } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : t('errorUnknown');
-            showError(`${t('errorFetchClients')}: ${errorMessage}`);
-            setClients([]); // Clear clients on fetch error
-        } finally {
-            setIsFetchingClients(false);
-        }
-    }, [t]);
-
     useEffect(() => {
-        fetchClients();
-    }, [fetchClients]);
+        setClients(clientStore.getClients());
+    }, []);
     
     const handleGoHome = () => setView('home');
-    const handleGoToList = () => {
-        fetchClients(); // Always refetch when going to the list
-        setView('list');
-    };
+    const handleGoToList = () => setView('list');
     const handleGoToNewForm = () => {
         setEditingClientId(null);
         setView('form');
@@ -63,41 +46,60 @@ const AppContent: React.FC = () => {
         setTimeout(() => setError(null), 8000);
     }
 
-    const handleSave = useCallback(async (formData: Omit<SaleData, 'id'>, fileObjects: { [key: string]: File }) => {
+    const handleSave = useCallback(async (formData: SaleData) => {
         setIsLoading(true);
         setError(null);
         setSuccessMessage(null);
-        
-        let formSuccess = false;
-        let reportSuccess = false;
 
         try {
-            const finalData = {
+            const isEditing = !!formData.id;
+
+            const finalDataWithTimestamp = {
                 ...formData,
                 timestamp: formData.timestamp || new Date().toLocaleString('es-AR', { hour12: false })
             };
-
-            // 1. Send form data and files to the main n8n workflow
-            setLoadingMessage(t('loading_n8n_form'));
-            formSuccess = await n8nService.sendFormDataToN8n(finalData, fileObjects);
-            if (!formSuccess) {
-                showError(t('error_n8n_form'));
+            
+            // 1. Send to Webhook (with File objects) and handle failure gracefully
+            setLoadingMessage(t('loading_sheets'));
+            const webhookSuccess = await sendToGoogleSheets(finalDataWithTimestamp);
+            if (!webhookSuccess) {
+                 // Show a non-blocking error, the process will continue
+                showError(t('error_sheets_fallback'));
             }
 
-            // 2. Send report data to the secondary n8n workflow
-            setLoadingMessage(t('loading_n8n_report'));
-            reportSuccess = await n8nService.sendReportDataToN8n(finalData);
-            if (!reportSuccess) {
-                showError(t('error_n8n_report'));
-            }
+            // 2. Prepare data for local storage and Excel by replacing File objects with their names.
+            const dataForStorage: SaleData = { ...finalDataWithTimestamp };
+            const fileKeys: (keyof SaleData)[] = [
+                'photoStoreFileName', 'photoContractFrontFileName', 'photoContractBackFileName',
+                'photoIdFrontFileName', 'photoIdBackFileName', 'photoCpfFileName', 'photoHomeFileName',
+                'photoPhoneCodeFileName', 'photoInstagramFileName'
+            ];
 
-            if (formSuccess || reportSuccess) {
-                showSuccess(t('successNew'));
-                setView('list');
-                fetchClients(); // Refresh the list from Google Sheets
+            fileKeys.forEach(key => {
+                const value = (dataForStorage as any)[key];
+                if (value instanceof File) {
+                    (dataForStorage as any)[key] = value.name;
+                }
+            });
+
+            // 3. Save to LocalStorage
+            setLoadingMessage(t('loading_saving'));
+            if (isEditing) {
+                const updatedClients = clientStore.updateClient(dataForStorage);
+                setClients(updatedClients);
+                showSuccess(t('successUpdate', { clientName: dataForStorage.clientFullName }));
             } else {
-                 showError(t('error_n8n_all_failed'));
+                const newClient = clientStore.addClient(dataForStorage);
+                setClients(prev => [...prev, newClient]);
+                showSuccess(t('successNew'));
             }
+
+            // 4. Generate and download Excel file
+            setLoadingMessage(t('loading_excel'));
+            generateExcel(dataForStorage);
+
+            // 5. Navigate to list view
+            setView('list');
 
         } catch (err) {
             console.error(err);
@@ -107,20 +109,15 @@ const AppContent: React.FC = () => {
             setIsLoading(false);
             setLoadingMessage(null);
         }
-    }, [t, fetchClients]);
+    }, [t]);
 
     const renderView = () => {
-        if (isFetchingClients && view !== 'form') {
-            return <div className="text-center p-10">{t('loading_clients')}</div>
-        }
-        
         switch (view) {
             case 'list':
                 return <ClientListPage clients={clients} onEdit={handleGoToEditForm} onNew={handleGoToNewForm} />;
             case 'form':
                 return (
                     <ClientFormPage 
-                        clients={clients}
                         editingClientId={editingClientId}
                         onSave={handleSave}
                         onCancel={handleGoToList}
