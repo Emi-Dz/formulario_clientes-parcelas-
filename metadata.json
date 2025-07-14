@@ -1,0 +1,6 @@
+{
+  "name": "n8n Client Form",
+  "description": "A responsive web application for entering client and sales data. Submits all form data and images to n8n workflows for processing and retrieves the client list directly from a Google Sheet.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
