@@ -1,13 +1,33 @@
+import { SaleData } from '../types';
+
+// A definitive list of all keys that represent file uploads.
+// This is used to cleanly separate file data from JSON data.
+const FILE_KEYS: (keyof Omit<SaleData, 'id'>)[] = [
+    'photoStoreFileName',
+    'photoContractFrontFileName',
+    'photoContractBackFileName',
+    'photoIdFrontFileName',
+    'photoIdBackFileName',
+    'photoCpfFileName',
+    'photoHomeFileName',
+    'photoPhoneCodeFileName',
+    'photoInstagramFileName'
+];
 
 /**
  * Sends the complete form data, including files, to the primary n8n webhook.
+ * This function is carefully designed to prevent ambiguity for the n8n webhook.
+ * It creates a multipart/form-data payload with two distinct types of parts:
+ * 1. A single part named 'data' containing a JSON string of all non-file form fields.
+ * 2. Multiple parts, one for each uploaded file, where the part name is the field name
+ *    and the content is the binary file data.
  *
- * @param {Omit<SaleData, 'id'>} data - The client and sale data.
- * @param {{ [key: string]: File }} files - A map of field names to File objects.
+ * @param {Omit<SaleData, 'id'>} data - The client and sale data, which may contain filename strings.
+ * @param {{ [key: string]: File }} files - A map of field names to actual File objects.
  * @returns {Promise<boolean>} - True for success, false for failure.
  */
 export const sendFormDataToN8n = async (
-    data: Omit<SaleData, 'id'>, 
+    data: Omit<SaleData, 'id'>,
     files: { [key: string]: File }
 ): Promise<boolean> => {
     const N8N_FORM_URL = import.meta.env.VITE_N8N_FORM_WORKFLOW_URL;
@@ -18,27 +38,29 @@ export const sendFormDataToN8n = async (
     }
 
     const formData = new FormData();
-    // Create a mutable copy of the data object. We will remove file-related
-    // keys from this object before stringifying it.
-    const jsonData = { ...data };
+    const jsonData: { [key: string]: any } = {};
 
-    // Iterate over the file objects. For each file:
-    // 1. Add it to the FormData object for binary upload.
-    // 2. Remove its corresponding key from the jsonData object. This prevents
-    //    the filename string from being sent inside the main JSON payload.
-    for (const key in files) {
-        if (Object.prototype.hasOwnProperty.call(files, key) && files[key]) {
-            // 1. Add the actual file to FormData for binary upload.
-            formData.append(key, files[key], files[key].name);
-            
-            // 2. Explicitly delete the property from the object that will be stringified.
-            delete jsonData[key as keyof typeof jsonData];
+    // 1. Build the JSON object (`jsonData`) by including only the fields
+    // that are NOT file fields. This creates a "clean" JSON payload.
+    for (const key in data) {
+        if (Object.prototype.hasOwnProperty.call(data, key)) {
+            if (!FILE_KEYS.includes(key as keyof Omit<SaleData, 'id'>)) {
+                jsonData[key] = data[key as keyof typeof data];
+            }
         }
     }
-
-    // Now, `jsonData` is clean of any properties that represent files.
-    // Stringify it and append it to the FormData under the key "data".
+    
+    // Add the clean JSON payload to the FormData object.
     formData.append('data', JSON.stringify(jsonData));
+
+    // 2. Add all the actual files to the FormData object.
+    // The key for each file (e.g., 'photoStoreFileName') will be the field name
+    // in the multipart request.
+    for (const key in files) {
+        if (Object.prototype.hasOwnProperty.call(files, key) && files[key]) {
+            formData.append(key, files[key], files[key].name);
+        }
+    }
 
     try {
         const response = await fetch(N8N_FORM_URL, {
@@ -48,6 +70,8 @@ export const sendFormDataToN8n = async (
 
         if (!response.ok) {
             console.error(`n8n form workflow returned an error: ${response.status} ${response.statusText}`);
+            const errorBody = await response.text();
+            console.error(`n8n error response: ${errorBody}`);
             return false;
         }
 
