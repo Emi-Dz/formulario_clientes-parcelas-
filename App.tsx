@@ -3,6 +3,7 @@ import { Header } from './components/Header';
 import { SaleData } from './types';
 import * as n8nService from './services/n8nService';
 import * as googleSheetsService from './services/googleSheetsService';
+import * as clientStore from './services/clientStore';
 import { HomePage } from './pages/HomePage';
 import { ClientListPage } from './pages/ClientListPage';
 import { ClientFormPage } from './pages/ClientFormPage';
@@ -26,10 +27,12 @@ const AppContent: React.FC = () => {
         try {
             const fetchedClients = await googleSheetsService.fetchClients();
             setClients(fetchedClients);
+            clientStore.setClients(fetchedClients);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : t('errorUnknown');
             showError(`${t('errorFetchClients')}: ${errorMessage}`);
             setClients([]); // Clear clients on fetch error
+            clientStore.setClients([]); // Also clear the store
         } finally {
             setIsFetchingClients(false);
         }
@@ -120,7 +123,6 @@ const AppContent: React.FC = () => {
             case 'form':
                 return (
                     <ClientFormPage 
-                        clients={clients}
                         editingClientId={editingClientId}
                         onSave={handleSave}
                         onCancel={handleGoToList}

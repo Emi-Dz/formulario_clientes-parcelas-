@@ -1,4 +1,35 @@
-import { SaleData } from '../types';
+
+/**
+ * Fetches the list of clients from the read-only Google Apps Script endpoint.
+ *
+ * @returns {Promise<SaleData[]>} - A promise that resolves to an array of client data.
+ */
+export const fetchClients = async (): Promise<SaleData[]> => {
+    const READ_URL = import.meta.env.VITE_GOOGLE_SHEETS_READ_URL;
+
+    if (!READ_URL) {
+        console.warn("VITE_GOOGLE_SHEETS_READ_URL is not defined. Cannot fetch clients.");
+        return [];
+    }
+
+    try {
+        const response = await fetch(READ_URL, { method: 'GET', mode: 'cors' });
+        if (!response.ok) {
+            throw new Error(`Failed to fetch clients: ${response.status} ${response.statusText}`);
+        }
+        const data = await response.json();
+        // The Apps Script might return an object with an error key
+        if (data.error) {
+            throw new Error(`Error from Google Sheets script: ${data.error}`);
+        }
+        return data as SaleData[];
+    } catch (error) {
+        console.error("Error fetching clients from Google Sheets:", error);
+        // Re-throw the error so the calling component can handle it
+        throw error;
+    }
+};
+
 
 /**
  * Sends sale data to a secure Google Apps Script endpoint which then appends

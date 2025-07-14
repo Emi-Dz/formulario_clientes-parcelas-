@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { SaleData, PaymentSystem, Language, ClientType } from '../types';
 import { PAYMENT_OPTIONS, CLIENT_TYPE_OPTIONS } from '../constants';
@@ -45,7 +44,7 @@ const Fieldset: React.FC<{ legend: string; children: React.ReactNode }> = ({ leg
 
 interface DataEntryFormProps {
     initialData: SaleData;
-    onSubmit: (data: SaleData) => void;
+    onSubmit: (data: SaleData, files: { [key: string]: File }) => void;
     onCancel: () => void;
     isLoading: boolean;
     loadingMessage: string | null;
@@ -54,10 +53,12 @@ interface DataEntryFormProps {
 
 export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSubmit, onCancel, isLoading, loadingMessage, isEditMode }) => {
     const [formData, setFormData] = useState<SaleData>(initialData);
+    const [fileObjects, setFileObjects] = useState<{ [key: string]: File }>({});
     const { t } = useLanguage();
 
     useEffect(() => {
         setFormData(initialData);
+        setFileObjects({}); // Also reset file objects on data change
     }, [initialData]);
 
     const calculateInstallmentPrice = useCallback(() => {
@@ -82,17 +83,11 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        const { name, value, type } = e.target;
+        const { name, value } = e.target;
         
         if (name === 'clientCpf') {
              setFormData(prev => ({ ...prev, [name]: formatCpf(value) }));
              return;
-        }
-
-        if (type === 'file') {
-            const file = (e.target as HTMLInputElement).files?.[0];
-            setFormData(prev => ({ ...prev, [name]: file ? file.name : '' }));
-            return;
         }
 
         const isNumericField = ['installments', 'downPayment', 'totalProductPrice'].includes(name);
@@ -105,15 +100,24 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
     
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, files } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: files && files.length > 0 ? files[0].name : '',
-        }));
+        if (files && files.length > 0) {
+            const file = files[0];
+            setFileObjects(prev => ({ ...prev, [name]: file }));
+            setFormData(prev => ({ ...prev, [name]: file.name }));
+        } else {
+            // Handle file removal
+            setFileObjects(prev => {
+                const newFiles = { ...prev };
+                delete newFiles[name];
+                return newFiles;
+            });
+            setFormData(prev => ({ ...prev, [name]: '' }));
+        }
     };
     
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSubmit(formData);
+        onSubmit(formData, fileObjects);
     }
 
     const twoSidedUpload = (titleKey: string, frontName: keyof SaleData, backName: keyof SaleData) => (
