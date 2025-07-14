@@ -17,6 +17,12 @@ interface ImportMetaEnv {
    * The URL for the read-only Google Apps Script that fetches the client list.
    */
   readonly VITE_GOOGLE_SHEETS_READ_URL?: string;
+
+  /**
+   * (Legacy) The URL for the Google Apps Script to write data directly to the sheet.
+   * This might be deprecated in favor of n8n workflows.
+   */
+  readonly VITE_GOOGLE_APPS_SCRIPT_URL?: string;
 }
 
 interface ImportMeta {
