@@ -1,4 +1,3 @@
-import { SaleData } from '../types';
 
 /**
  * Sends the complete form data, including files, to the primary n8n webhook.
@@ -20,10 +19,20 @@ export const sendFormDataToN8n = async (
 
     const formData = new FormData();
 
+    // Create a copy of the data and remove file properties from it.
+    // The files will be sent as separate binary parts, so their names
+    // shouldn't be in the main JSON data, which can confuse parsers.
+    const jsonData = { ...data };
+    for (const fileKey in files) {
+        if (Object.prototype.hasOwnProperty.call(files, fileKey)) {
+             delete (jsonData as any)[fileKey];
+        }
+    }
+    
     // Append all text/numeric data as a single JSON string under a 'data' key
-    formData.append('data', JSON.stringify(data));
+    formData.append('data', JSON.stringify(jsonData));
 
-    // Append each file
+    // Append each file as a separate binary part
     for (const key in files) {
         if (files[key]) {
             formData.append(key, files[key], files[key].name);
