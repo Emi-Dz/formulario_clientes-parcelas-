@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { SaleData, PaymentSystem, Language, ClientType } from '../types';
 import { PAYMENT_OPTIONS, CLIENT_TYPE_OPTIONS } from '../constants';
@@ -82,17 +81,11 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        const { name, value, type } = e.target;
+        const { name, value } = e.target;
         
         if (name === 'clientCpf') {
              setFormData(prev => ({ ...prev, [name]: formatCpf(value) }));
              return;
-        }
-
-        if (type === 'file') {
-            const file = (e.target as HTMLInputElement).files?.[0];
-            setFormData(prev => ({ ...prev, [name]: file ? file.name : '' }));
-            return;
         }
 
         const isNumericField = ['installments', 'downPayment', 'totalProductPrice'].includes(name);
@@ -105,10 +98,12 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
     
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, files } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: files && files.length > 0 ? files[0].name : '',
-        }));
+        if (files && files.length > 0) {
+            setFormData(prev => ({
+                ...prev,
+                [name]: files[0],
+            }));
+        }
     };
     
     const handleSubmit = (e: React.FormEvent) => {
@@ -121,11 +116,11 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
             <span className="block text-sm font-medium text-center text-slate-700 dark:text-slate-300 mb-2">{t(titleKey)}</span>
             <div className="grid grid-cols-2 gap-2 mt-auto">
                 <button type="button" className="relative w-full p-2 border-2 border-dashed border-slate-400 dark:border-slate-500 rounded-lg text-slate-500 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-500 transition-colors">
-                    {t('frente')} {(formData[frontName] as string) && '✓'}
+                    {t('frente')} {formData[frontName] && '✓'}
                     <input type="file" name={frontName} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} />
                 </button>
                  <button type="button" className="relative w-full p-2 border-2 border-dashed border-slate-400 dark:border-slate-500 rounded-lg text-slate-500 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-500 transition-colors">
-                    {t('verso')} {(formData[backName] as string) && '✓'}
+                    {t('verso')} {formData[backName] && '✓'}
                     <input type="file" name={backName} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} />
                 </button>
             </div>
@@ -134,14 +129,14 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
     
     const singleUploadButton = (titleKey: string, name: keyof SaleData) => (
          <button type="button" className="relative w-full p-3 border-2 border-dashed border-slate-400 dark:border-slate-500 rounded-lg text-slate-500 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-500 transition-colors">
-            {t(titleKey)} {(formData[name] as string) && '✓'}
+            {t(titleKey)} {formData[name] && '✓'}
             <input type="file" name={name} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} />
         </button>
     );
     
     const fileUploadButton = (label: string, name: keyof SaleData) => (
         <button type="button" className="relative w-full p-2 border-2 border-dashed border-slate-400 dark:border-slate-500 rounded-lg text-slate-500 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-500 transition-colors">
-            {label} {(formData[name] as string) && '✓'}
+            {label} {formData[name] && '✓'}
             <input type="file" name={name} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} />
         </button>
     );
