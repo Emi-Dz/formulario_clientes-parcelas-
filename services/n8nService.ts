@@ -38,29 +38,28 @@ export const sendFormDataToN8n = async (
     }
 
     const formData = new FormData();
-    const jsonData: { [key: string]: any } = {};
+    
+    // Create a mutable copy of the data object to be sent as JSON.
+    // We will clean this object by removing file-related keys.
+    const jsonData: { [key: string]: any } = { ...data };
 
-    // 1. Build the JSON object (`jsonData`) by including only the fields
-    // that are NOT file fields. This creates a "clean" JSON payload.
-    for (const key in data) {
-        if (Object.prototype.hasOwnProperty.call(data, key)) {
-            if (!FILE_KEYS.includes(key as keyof Omit<SaleData, 'id'>)) {
-                jsonData[key] = data[key as keyof typeof data];
-            }
+    // 1. Iterate over the actual file objects provided.
+    for (const fileKey in files) {
+        // Check that the key belongs to the object and the file is valid.
+        if (Object.prototype.hasOwnProperty.call(files, fileKey) && files[fileKey]) {
+            // Append the actual file (binary data) to the FormData.
+            formData.append(fileKey, files[fileKey], files[fileKey].name);
+            
+            // Now, remove this key from the JSON data object because its value
+            // is being sent as a binary part, not as a string in the JSON.
+            // This is the crucial step to avoid ambiguity for n8n.
+            delete jsonData[fileKey];
         }
     }
-    
-    // Add the clean JSON payload to the FormData object.
+
+    // 2. Stringify the cleaned JSON data and append it as a single field named 'data'.
     formData.append('data', JSON.stringify(jsonData));
 
-    // 2. Add all the actual files to the FormData object.
-    // The key for each file (e.g., 'photoStoreFileName') will be the field name
-    // in the multipart request.
-    for (const key in files) {
-        if (Object.prototype.hasOwnProperty.call(files, key) && files[key]) {
-            formData.append(key, files[key], files[key].name);
-        }
-    }
 
     try {
         const response = await fetch(N8N_FORM_URL, {
