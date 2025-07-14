@@ -1,13 +1,12 @@
-
 import React, { useMemo } from 'react';
 import { DataEntryForm } from '../components/DataEntryForm';
-import { SaleData, PaymentSystem, Language } from '../types';
+import { SaleData, PaymentSystem } from '../types';
 import * as clientStore from '../services/clientStore';
 import { useLanguage } from '../context/LanguageContext';
 
 interface ClientFormPageProps {
     editingClientId: string | null;
-    onSave: (data: SaleData) => void;
+    onSave: (data: SaleData, files: { [key: string]: File }) => void;
     onCancel: () => void;
     isLoading: boolean;
     loadingMessage: string | null;
@@ -93,3 +92,4 @@ export const ClientFormPage: React.FC<ClientFormPageProps> = ({ editingClientId,
         </div>
     );
 };
+
