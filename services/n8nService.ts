@@ -1,4 +1,3 @@
-import { SaleData } from '../types';
 
 /**
  * Sends the complete form data, including files, to the primary n8n webhook.
@@ -19,31 +18,32 @@ export const sendFormDataToN8n = async (
     }
 
     const formData = new FormData();
+    // Create a mutable copy of the data object. We will remove file-related
+    // keys from this object before stringifying it.
+    const jsonData = { ...data };
 
-    // To prevent n8n from misinterpreting files as JSON fields, we create a
-    // clean JSON object that includes only the form data, excluding any keys
-    // that correspond to an uploaded file.
-    const jsonData = Object.entries(data).reduce((acc, [key, value]) => {
-        if (!Object.prototype.hasOwnProperty.call(files, key)) {
-            acc[key] = value;
-        }
-        return acc;
-    }, {} as { [key: string]: any });
-
-    // Append the clean JSON data as a single part.
-    formData.append('data', JSON.stringify(jsonData));
-
-    // Append each file as a separate binary part
+    // Iterate over the file objects. For each file:
+    // 1. Add it to the FormData object for binary upload.
+    // 2. Remove its corresponding key from the jsonData object. This prevents
+    //    the filename string from being sent inside the main JSON payload.
     for (const key in files) {
-        if (files[key]) {
+        if (Object.prototype.hasOwnProperty.call(files, key) && files[key]) {
+            // 1. Add the actual file to FormData for binary upload.
             formData.append(key, files[key], files[key].name);
+            
+            // 2. Explicitly delete the property from the object that will be stringified.
+            delete jsonData[key as keyof typeof jsonData];
         }
     }
+
+    // Now, `jsonData` is clean of any properties that represent files.
+    // Stringify it and append it to the FormData under the key "data".
+    formData.append('data', JSON.stringify(jsonData));
 
     try {
         const response = await fetch(N8N_FORM_URL, {
             method: 'POST',
-            body: formData,
+            body: formData, // The browser will automatically set the Content-Type to multipart/form-data
         });
 
         if (!response.ok) {
