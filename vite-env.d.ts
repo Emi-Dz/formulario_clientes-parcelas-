@@ -4,19 +4,19 @@
 
 interface ImportMetaEnv {
   /**
-   * The webhook URL for the primary n8n workflow that handles form data and file uploads.
+   * The URL for the Google Apps Script web app used for the Google Sheets integration.
+   * This is an optional variable. If not provided, the Google Sheets submission will be skipped.
    */
-  readonly VITE_N8N_FORM_WORKFLOW_URL?: string;
+  readonly VITE_GOOGLE_APPS_SCRIPT_URL?: string;
 
   /**
-   * The webhook URL for the secondary n8n workflow that handles generating individual reports.
+   * The URL for the n8n webhook to receive form submissions.
+   * This is optional. If not provided, the webhook submission will be skipped.
    */
-  readonly VITE_N8N_REPORT_WORKFLOW_URL?: string;
-  
-  /**
-   * The URL for the read-only Google Apps Script that fetches the client list.
-   */
-  readonly VITE_GOOGLE_SHEETS_READ_URL?: string;
+  readonly VITE_N8N_WEBHOOK_URL?: string;
+
+  // You can add other environment variables here.
+  // readonly VITE_SOME_OTHER_VAR: string;
 }
 
 interface ImportMeta {
