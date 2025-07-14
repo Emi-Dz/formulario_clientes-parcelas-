@@ -38,14 +38,14 @@ export interface SaleData {
     homeLocation: string;
     homeAddress: string;
     
-    photoStoreFileName: string;
-    photoContractFrontFileName: string;
-    photoContractBackFileName: string;
-    photoIdFrontFileName: string;
-    photoIdBackFileName: string;
-    photoCpfFileName: string;
-    photoHomeFileName: string;
-    photoPhoneCodeFileName: string;
+    photoStoreFileName: string | File;
+    photoContractFrontFileName: string | File;
+    photoContractBackFileName: string | File;
+    photoIdFrontFileName: string | File;
+    photoIdBackFileName: string | File;
+    photoCpfFileName: string | File;
+    photoHomeFileName: string | File;
+    photoPhoneCodeFileName: string | File;
     
     clientType: ClientType;
     paymentSystem: PaymentSystem;
@@ -53,6 +53,6 @@ export interface SaleData {
     
     vendedor: string;
     guarantor: string;
-    photoInstagramFileName: string;
+    photoInstagramFileName: string | File;
     notes: string;
 }
