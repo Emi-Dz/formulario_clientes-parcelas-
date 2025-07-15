@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useState, useMemo } from 'react';
 import { SaleData } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -16,20 +17,51 @@ const EditIcon = () => (
 
 export const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit, onNew }) => {
     const { t } = useLanguage();
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const normalizeCpf = (cpf: string) => (cpf || '').replace(/\D/g, '');
+
+    const filteredClients = useMemo(() => {
+        if (!searchTerm.trim()) {
+            return clients;
+        }
+        const normalizedSearchTerm = normalizeCpf(searchTerm);
+        if (!normalizedSearchTerm) return clients;
+        
+        return clients.filter(client =>
+            normalizeCpf(client.clientCpf).includes(normalizedSearchTerm)
+        );
+    }, [clients, searchTerm]);
+
 
     return (
         <div className="bg-white dark:bg-slate-800 p-6 md:p-8 rounded-xl shadow-lg">
-            <div className="flex justify-between items-center mb-6 border-b border-slate-300 dark:border-slate-600 pb-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <h1 className="text-2xl font-bold text-slate-800 dark:text-white">{t('clientListTitle')}</h1>
                 <button
                     onClick={onNew}
-                    className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                    className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 self-end sm:self-center"
                 >
                     + {t('newButton')}
                 </button>
             </div>
+            
+            <div className="mb-6">
+                 <input
+                    type="text"
+                    placeholder={t('searchPlaceholderCpf')}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full max-w-sm px-4 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    aria-label={t('searchPlaceholderCpf')}
+                />
+            </div>
 
-            {clients.length === 0 ? (
+            {clients.length > 0 && filteredClients.length === 0 ? (
+                 <p className="text-center text-slate-500 dark:text-slate-400 py-8">
+                    {t('noClientsFound')}
+                </p>
+            ) : clients.length === 0 ? (
                 <p className="text-center text-slate-500 dark:text-slate-400 py-8">
                     {t('noClients')}
                 </p>
@@ -39,7 +71,7 @@ export const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit,
                         <thead className="bg-slate-50 dark:bg-slate-700">
                             <tr>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">{t('colCpf')}</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">{t('colClient')}</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">{t('sobrenomeENome')}</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">{t('colProduct')}</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">{t('colTotal')}</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">{t('colPaymentSystem')}</th>
@@ -49,7 +81,7 @@ export const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit,
                             </tr>
                         </thead>
                         <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
-                            {clients.map((client) => (
+                            {filteredClients.map((client) => (
                                 <tr key={client.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
                                         {client.clientCpf}
