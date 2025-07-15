@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { Header } from './components/Header';
 import { SaleData } from './types';
@@ -7,13 +8,19 @@ import { HomePage } from './pages/HomePage';
 import { ClientListPage } from './pages/ClientListPage';
 import { ClientFormPage } from './pages/ClientFormPage';
 import { useLanguage } from './context/LanguageContext';
+import { LoginPage } from './pages/LoginPage';
 
 type View = 'home' | 'list' | 'form';
 
+const CORRECT_PASSWORD = 'vendas2024';
+const AUTH_KEY = 'client-app-auth';
+
 const App: React.FC = () => {
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => sessionStorage.getItem(AUTH_KEY) === 'true');
+    const [isLoginVisible, setIsLoginVisible] = useState<boolean>(false);
     const [view, setView] = useState<View>('home');
     const [clients, setClients] = useState<SaleData[]>([]);
-    const [isFetchingClients, setIsFetchingClients] = useState<boolean>(true);
+    const [isFetchingClients, setIsFetchingClients] = useState<boolean>(false);
     const [editingClientId, setEditingClientId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [loadingMessage, setLoadingMessage] = useState<string | null>(null);
@@ -36,20 +43,26 @@ const App: React.FC = () => {
             setIsFetchingClients(false);
         }
     }, [t]);
-
-    useEffect(() => {
-        fetchClients();
-    }, [fetchClients]);
     
-    const handleGoHome = () => setView('home');
-    const handleGoToList = () => {
-        fetchClients();
-        setView('list');
+    const handleGoHome = () => {
+        setView('home');
+        setIsLoginVisible(false); // Hide login page if user navigates home
     };
+
+    const handleGoToList = () => {
+        if (isAuthenticated) {
+            setView('list');
+            fetchClients();
+        } else {
+            setIsLoginVisible(true);
+        }
+    };
+    
     const handleGoToNewForm = () => {
         setEditingClientId(null);
         setView('form');
     };
+
     const handleGoToEditForm = (id: string) => {
         setEditingClientId(id);
         setView('form');
@@ -70,13 +83,15 @@ const App: React.FC = () => {
         setError(null);
         setSuccessMessage(null);
         
-        // For new clients, check if CPF already exists using a robust, normalized comparison.
         if (!formData.id && formData.clientCpf) {
             const normalizeCpf = (cpf: string) => (cpf || '').replace(/\D/g, '');
             const newClientCpf = normalizeCpf(formData.clientCpf);
 
-            if (newClientCpf) { // Only check if CPF is not empty
-                const clientExists = clients.some(client => normalizeCpf(client.clientCpf) === newClientCpf);
+            // Fetch the latest client list before checking for duplicates
+            const currentClients = await n8nService.fetchClientsFromN8n();
+
+            if (newClientCpf) {
+                const clientExists = currentClients.some(client => normalizeCpf(client.clientCpf) === newClientCpf);
                 if (clientExists) {
                     showError(t('errorClientExists'));
                     setIsLoading(false);
@@ -96,23 +111,24 @@ const App: React.FC = () => {
 
             setLoadingMessage(t('loading_n8n_form'));
             formSuccess = await n8nService.sendFormDataToN8n(finalData, fileObjects);
-            if (!formSuccess) {
-                showError(t('error_n8n_form'));
-            }
-
+            if (!formSuccess) showError(t('error_n8n_form'));
+            
             setLoadingMessage(t('loading_n8n_report'));
             reportSuccess = await n8nService.sendReportDataToN8n(finalData);
-            if (!reportSuccess) {
-                showError(t('error_n8n_report'));
-            }
+            if (!reportSuccess) showError(t('error_n8n_report'));
 
             if (formSuccess || reportSuccess) {
                  const successMsg = formData.id 
                     ? t('successUpdate', { clientName: formData.clientFullName })
                     : t('successNew');
                 showSuccess(successMsg);
-                setView('list');
-                fetchClients(); 
+                // Go to list only if authenticated, otherwise go home
+                if (isAuthenticated) {
+                    setView('list');
+                    fetchClients();
+                } else {
+                    setView('home');
+                }
             } else {
                  showError(t('error_n8n_all_failed'));
             }
@@ -125,22 +141,45 @@ const App: React.FC = () => {
             setIsLoading(false);
             setLoadingMessage(null);
         }
-    }, [t, fetchClients, clients]);
+    }, [t, isAuthenticated, fetchClients]);
+
+    const handleLogin = (password: string): boolean => {
+        if (password === CORRECT_PASSWORD) {
+            setIsAuthenticated(true);
+            sessionStorage.setItem(AUTH_KEY, 'true');
+            setIsLoginVisible(false);
+            setView('list'); // Go to list after successful login
+            fetchClients();
+            return true;
+        }
+        return false;
+    };
+
+    const handleLogout = () => {
+        setIsAuthenticated(false);
+        sessionStorage.removeItem(AUTH_KEY);
+        setView('home');
+    };
+    
+    const handleCancelLogin = () => {
+        setIsLoginVisible(false);
+    };
 
     const renderView = () => {
-        if (isFetchingClients && view !== 'form') {
+        if (isFetchingClients && view === 'list') {
             return <div className="text-center p-10">{t('loading_clients')}</div>
         }
         
         switch (view) {
             case 'list':
+                 // This view is protected by the handleGoToList logic
                 return <ClientListPage clients={clients} onEdit={handleGoToEditForm} onNew={handleGoToNewForm} />;
             case 'form':
                 return (
                     <ClientFormPage 
                         editingClientId={editingClientId}
                         onSave={handleSave}
-                        onCancel={handleGoToList}
+                        onCancel={isAuthenticated ? handleGoToList : handleGoHome}
                         isLoading={isLoading}
                         loadingMessage={loadingMessage}
                     />
@@ -153,19 +192,25 @@ const App: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-sans">
-            <Header onGoHome={handleGoHome} />
+            <Header onGoHome={handleGoHome} onLogout={handleLogout} isAuthenticated={isAuthenticated} />
             <main className="container mx-auto p-4 md:p-8">
-                {successMessage && (
-                    <div className="mb-4 p-4 bg-green-100 dark:bg-green-900 border border-green-400 dark:border-green-600 text-green-700 dark:text-green-200 rounded-lg">
-                        {successMessage}
-                    </div>
+                 {isLoginVisible ? (
+                    <LoginPage onLogin={handleLogin} onCancel={handleCancelLogin} />
+                ) : (
+                    <>
+                        {successMessage && (
+                            <div className="mb-4 p-4 bg-green-100 dark:bg-green-900 border border-green-400 dark:border-green-600 text-green-700 dark:text-green-200 rounded-lg">
+                                {successMessage}
+                            </div>
+                        )}
+                        {error && (
+                            <div className="mb-4 p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 rounded-lg">
+                                {error}
+                            </div>
+                        )}
+                        {renderView()}
+                    </>
                 )}
-                {error && (
-                    <div className="mb-4 p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 rounded-lg">
-                        {error}
-                    </div>
-                )}
-                {renderView()}
             </main>
         </div>
     );
