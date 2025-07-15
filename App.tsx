@@ -2,7 +2,6 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { Header } from './components/Header';
 import { SaleData } from './types';
 import * as n8nService from './services/n8nService';
-import * as googleSheetsService from './services/googleSheetsService';
 import * as clientStore from './services/clientStore';
 import { HomePage } from './pages/HomePage';
 import { ClientListPage } from './pages/ClientListPage';
@@ -25,7 +24,8 @@ const AppContent: React.FC = () => {
     const fetchClients = useCallback(async () => {
         setIsFetchingClients(true);
         try {
-            const fetchedClients = await googleSheetsService.fetchClients();
+            // Fetch from n8n instead of Google Sheets
+            const fetchedClients = await n8nService.fetchClientsFromN8n();
             setClients(fetchedClients);
             clientStore.setClients(fetchedClients);
         } catch (err) {
@@ -66,11 +66,21 @@ const AppContent: React.FC = () => {
         setTimeout(() => setError(null), 8000);
     }
 
-    const handleSave = useCallback(async (formData: Omit<SaleData, 'id'>, fileObjects: { [key: string]: File }) => {
+    const handleSave = useCallback(async (formData: SaleData, fileObjects: { [key: string]: File }) => {
         setIsLoading(true);
         setError(null);
         setSuccessMessage(null);
         
+        // For new clients, check if CPF already exists
+        if (!formData.id && formData.clientCpf) {
+            const clientExists = clients.some(client => client.clientCpf === formData.clientCpf);
+            if (clientExists) {
+                showError(t('errorClientExists'));
+                setIsLoading(false);
+                return;
+            }
+        }
+
         let formSuccess = false;
         let reportSuccess = false;
 
@@ -82,6 +92,7 @@ const AppContent: React.FC = () => {
 
             // 1. Send form data and files to the main n8n workflow
             setLoadingMessage(t('loading_n8n_form'));
+            // The service now handles both new and edited data (with ID)
             formSuccess = await n8nService.sendFormDataToN8n(finalData, fileObjects);
             if (!formSuccess) {
                 showError(t('error_n8n_form'));
@@ -89,15 +100,19 @@ const AppContent: React.FC = () => {
 
             // 2. Send report data to the secondary n8n workflow
             setLoadingMessage(t('loading_n8n_report'));
+            // The service now handles both new and edited data (with ID)
             reportSuccess = await n8nService.sendReportDataToN8n(finalData);
             if (!reportSuccess) {
                 showError(t('error_n8n_report'));
             }
 
             if (formSuccess || reportSuccess) {
-                showSuccess(t('successNew'));
+                 const successMsg = formData.id 
+                    ? t('successUpdate', { clientName: formData.clientFullName })
+                    : t('successNew');
+                showSuccess(successMsg);
                 setView('list');
-                fetchClients(); // Refresh the list from Google Sheets
+                fetchClients(); // Refresh the list from n8n
             } else {
                  showError(t('error_n8n_all_failed'));
             }
@@ -110,7 +125,7 @@ const AppContent: React.FC = () => {
             setIsLoading(false);
             setLoadingMessage(null);
         }
-    }, [t, fetchClients]);
+    }, [t, fetchClients, clients]); // Added 'clients' to dependency array for the CPF check
 
     const renderView = () => {
         if (isFetchingClients && view !== 'form') {
@@ -162,5 +177,7 @@ const App: React.FC = () => (
     </LanguageProvider>
 );
 
+
+export default App;
 
 export default App;
