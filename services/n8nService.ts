@@ -1,9 +1,8 @@
-
-import { SaleData } from '../types';
+import { SaleData, PaymentSystem } from '../types';
 
 /**
- * Fetches the list of all clients from the n8n webhook. This function is robust
- * and can handle several common n8n response formats.
+ * Fetches the list of all clients from the n8n webhook and maps the raw data
+ * to the application's internal data structure (SaleData).
  *
  * @returns {Promise<SaleData[]>} - A promise that resolves to an array of client data.
  */
@@ -22,41 +21,71 @@ export const fetchClientsFromN8n = async (): Promise<SaleData[]> => {
             throw new Error(`Failed to fetch clients from n8n: ${response.status} ${response.statusText}. Body: ${errorBody}`);
         }
         
-        const textBody = await response.text();
-        if (!textBody) {
-            return []; // Handle cases where n8n returns an empty body.
+        const rawData = await response.json();
+
+        if (!Array.isArray(rawData)) {
+            console.error("Data from n8n is not an array as expected:", rawData);
+            return [];
         }
 
-        const data = JSON.parse(textBody);
-        
-        let clientList: any[] = [];
+        // Map the raw data from Google Sheets/n8n to the app's SaleData structure.
+        const mappedClients: SaleData[] = rawData.map((rawClient: any) => {
+            // Handle potential typo in the column name from Google Sheets ("Sisteme" vs "Sistema").
+            const paymentSystemValue = (rawClient['Sisteme de pago'] || rawClient['Sistema de pago'] || PaymentSystem.MENSAL).toUpperCase();
 
-        // Case 1: The response is already the array of clients. `[{}, {}]`
-        if (Array.isArray(data)) {
-            clientList = data;
-        } 
-        // Case 2: The response is an object containing the array of clients. `{"data": [{}, {}]}`
-        else if (typeof data === 'object' && data !== null) {
-            // Find the first property that is an array and assume it's our list.
-            const arrayKey = Object.keys(data).find(key => Array.isArray(data[key]));
-            if (arrayKey) {
-                clientList = data[arrayKey];
-            }
-        }
+            return {
+                id: String(rawClient.row_number || Date.now() + Math.random()), // Use row_number as a stable ID
+                timestamp: rawClient['Marca temporal'] || '',
+                clientFullName: rawClient['Nombre y Apellido'] || '',
+                clientCpf: rawClient['CPF Cliente'] || '',
+                // Use the date part of the timestamp for purchase date, or default to today.
+                purchaseDate: rawClient['Marca temporal']?.split(',')[0] || new Date().toISOString().split('T')[0],
+                phone: String(rawClient['Telefono Cliente'] || ''),
+                product: rawClient['Productos'] || '',
+                
+                totalProductPrice: Number(rawClient['Precio Total'] || 0),
+                downPayment: Number(rawClient['Anticipo'] || 0),
+                installments: Number(rawClient['Cuotas'] || 1),
+                installmentPrice: Number(rawClient['Precio por Cuota'] || 0),
 
-        // Now that we (hopefully) have the list, check for the common n8n `item.json` wrapper.
-        // This handles the `[{ json: {...} }, { json: {...} }]` format.
-        if (clientList.length > 0 && clientList[0] && clientList[0].hasOwnProperty('json')) {
-            // Extract the `json` property from each item.
-            return clientList.map(item => item.json).filter(Boolean) as SaleData[];
-        }
+                reference1Name: rawClient['Referencia 1'] || '',
+                reference1Relationship: rawClient['Parentesco / Telefono REF 1'] || '',
+                reference2Name: rawClient['Referencia 2'] || '',
+                reference2Relationship: rawClient['Parentesco / Telefono REF 2'] || '',
+                
+                language: rawClient['Idiomas'] || '',
+                storeName: rawClient['Nombre Tienda'] || '',
+                
+                workLocation: rawClient['Ubicacion Trabajo'] || '',
+                workAddress: rawClient['Direccion trabajo'] || '',
+                homeLocation: rawClient['Ubicacion Casa'] || '',
+                homeAddress: rawClient['Dirección Casa'] || '',
+                
+                photoStoreFileName: rawClient['Foto Tienda'] || '',
+                photoContractFrontFileName: rawClient['Foto Contrato FRENTE'] || '',
+                photoContractBackFileName: rawClient['Foto Contrato REVERSO'] || '',
+                photoIdFrontFileName: rawClient['Foto RG FRENTE'] || '',
+                photoIdBackFileName: rawClient['Foto RG REVERSO'] || '',
+                photoCpfFileName: rawClient['Foto CPF'] || '',
+                photoHomeFileName: rawClient['Foto Casa'] || '',
+                photoPhoneCodeFileName: rawClient['Foto Codigo Telefono'] || '',
+                photoInstagramFileName: rawClient['Foto Perfil Instagram'] || '',
+                
+                clientType: rawClient['Tipo cliente'] || '',
+                paymentSystem: paymentSystemValue as PaymentSystem,
+                paymentStartDate: rawClient['Fecha inicio de pago'] || '',
+                
+                vendedor: rawClient['Vendedor'] || '', // Assuming 'Vendedor' might be a column
+                guarantor: rawClient['Garante'] || '',
+                notes: rawClient['Observaciones'] || '',
+            };
+        });
 
-        // If no special format is detected, return the list as is.
-        return clientList as SaleData[];
+        return mappedClients;
 
     } catch (error) {
         console.error("Error fetching or parsing clients from n8n:", error);
-        throw error; // Re-throw the error to be caught by the calling function in App.tsx
+        throw error;
     }
 };
 
