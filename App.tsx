@@ -6,11 +6,11 @@ import * as clientStore from './services/clientStore';
 import { HomePage } from './pages/HomePage';
 import { ClientListPage } from './pages/ClientListPage';
 import { ClientFormPage } from './pages/ClientFormPage';
-import { LanguageProvider, useLanguage } from './context/LanguageContext';
+import { useLanguage } from './context/LanguageContext';
 
 type View = 'home' | 'list' | 'form';
 
-const AppContent: React.FC = () => {
+const App: React.FC = () => {
     const [view, setView] = useState<View>('home');
     const [clients, setClients] = useState<SaleData[]>([]);
     const [isFetchingClients, setIsFetchingClients] = useState<boolean>(true);
@@ -171,13 +171,5 @@ const AppContent: React.FC = () => {
     );
 };
 
-const App: React.FC = () => (
-    <LanguageProvider>
-        <AppContent />
-    </LanguageProvider>
-);
-
-
-export default App;
 
 export default App;
