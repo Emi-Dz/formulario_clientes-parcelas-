@@ -1,3 +1,4 @@
+
 import { SaleData, PaymentSystem } from '../types';
 
 /**
@@ -21,20 +22,37 @@ export const fetchClientsFromN8n = async (): Promise<SaleData[]> => {
             throw new Error(`Failed to fetch clients from n8n: ${response.status} ${response.statusText}. Body: ${errorBody}`);
         }
         
-        const rawData = await response.json();
+        const responseBody = await response.json();
+        let clientListRaw: any[] = [];
 
-        if (!Array.isArray(rawData)) {
-            console.error("Data from n8n is not an array as expected:", rawData);
-            return [];
+        // Intelligently find the array of clients within the response from n8n.
+        if (Array.isArray(responseBody)) {
+            clientListRaw = responseBody;
+        } else if (typeof responseBody === 'object' && responseBody !== null) {
+            // Find the first property in the object that is an array.
+            const potentialArray = Object.values(responseBody).find(Array.isArray);
+            if (potentialArray) {
+                clientListRaw = potentialArray;
+            }
+        }
+        
+        // Handle a common n8n pattern where each item is wrapped, e.g., [{json: {...}}]
+        if (clientListRaw.length > 0 && clientListRaw[0] && clientListRaw[0].json) {
+           clientListRaw = clientListRaw.map((item: any) => item.json);
+        }
+
+        if (clientListRaw.length === 0 && (typeof responseBody === 'object' && responseBody !== null)) {
+             console.warn("Could not find a client array in the response from n8n:", responseBody);
         }
 
         // Map the raw data from Google Sheets/n8n to the app's SaleData structure.
-        const mappedClients: SaleData[] = rawData.map((rawClient: any) => {
+        const mappedClients: SaleData[] = clientListRaw.map((rawClient: any) => {
+             if (!rawClient || typeof rawClient !== 'object') return null;
             // Handle potential typo in the column name from Google Sheets ("Sisteme" vs "Sistema").
             const paymentSystemValue = (rawClient['Sisteme de pago'] || rawClient['Sistema de pago'] || PaymentSystem.MENSAL).toUpperCase();
 
             return {
-                id: String(rawClient.row_number || Date.now() + Math.random()), // Use row_number as a stable ID
+                id: String(rawClient.row_number || `temp_${Date.now()}_${Math.random()}`), // Use row_number as a stable ID
                 timestamp: rawClient['Marca temporal'] || '',
                 clientFullName: rawClient['Nombre y Apellido'] || '',
                 clientCpf: rawClient['CPF Cliente'] || '',
@@ -75,11 +93,11 @@ export const fetchClientsFromN8n = async (): Promise<SaleData[]> => {
                 paymentSystem: paymentSystemValue as PaymentSystem,
                 paymentStartDate: rawClient['Fecha inicio de pago'] || '',
                 
-                vendedor: rawClient['Vendedor'] || '', // Assuming 'Vendedor' might be a column
+                vendedor: rawClient['Vendedor'] || '',
                 guarantor: rawClient['Garante'] || '',
                 notes: rawClient['Observaciones'] || '',
             };
-        });
+        }).filter((client): client is SaleData => client !== null); // Filter out any nulls from failed mappings
 
         return mappedClients;
 
