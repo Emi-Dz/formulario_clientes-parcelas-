@@ -12,9 +12,14 @@ interface ImportMetaEnv {
    * The webhook URL for the secondary n8n workflow that handles generating individual reports.
    */
   readonly VITE_N8N_REPORT_WORKFLOW_URL?: string;
+
+  /**
+   * The webhook URL to fetch all clients from n8n.
+   */
+  readonly VITE_N8N_GET_CLIENTS_URL?: string;
   
   /**
-   * The URL for the read-only Google Apps Script that fetches the client list.
+   * (Legacy) The URL for the read-only Google Apps Script that fetches the client list.
    */
   readonly VITE_GOOGLE_SHEETS_READ_URL?: string;
 
