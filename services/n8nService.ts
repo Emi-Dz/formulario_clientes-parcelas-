@@ -1,17 +1,53 @@
 import { SaleData } from '../types';
 
 /**
+ * Fetches the list of all clients from the n8n webhook.
+ *
+ * @returns {Promise<SaleData[]>} - A promise that resolves to an array of client data.
+ */
+export const fetchClientsFromN8n = async (): Promise<SaleData[]> => {
+    const GET_CLIENTS_URL = import.meta.env.VITE_N8N_GET_CLIENTS_URL;
+
+    if (!GET_CLIENTS_URL) {
+        console.warn("VITE_N8N_GET_CLIENTS_URL is not defined. Cannot fetch clients.");
+        return [];
+    }
+
+    try {
+        const response = await fetch(GET_CLIENTS_URL, { method: 'GET', mode: 'cors' });
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`Failed to fetch clients from n8n: ${response.status} ${response.statusText}. Body: ${errorBody}`);
+        }
+        
+        const textBody = await response.text();
+        if (!textBody) { // Handle empty response body
+            return [];
+        }
+
+        const data = JSON.parse(textBody);
+        
+        return Array.isArray(data) ? data as SaleData[] : [];
+
+    } catch (error) {
+        console.error("Error fetching clients from n8n:", error);
+        throw error;
+    }
+};
+
+
+/**
  * Sends the complete form data, including files, to the primary n8n webhook.
  * This function constructs a `multipart/form-data` payload where each piece of data
  * is a separate part, and each file is a separate binary part. This is a common
  * format that is easily parsable by services like n8n.
  *
- * @param {Omit<SaleData, 'id'>} data - The client and sale data object.
+ * @param {SaleData} data - The client and sale data object, including ID for edits.
  * @param {{ [key: string]: File }} files - A map of field names to File objects.
  * @returns {Promise<boolean>} - True for success, false for failure.
  */
 export const sendFormDataToN8n = async (
-    data: Omit<SaleData, 'id'>, 
+    data: SaleData, 
     files: { [key: string]: File }
 ): Promise<boolean> => {
     const N8N_FORM_URL = import.meta.env.VITE_N8N_FORM_WORKFLOW_URL;
@@ -77,10 +113,10 @@ export const sendFormDataToN8n = async (
 /**
  * Sends just the JSON data to the secondary n8n workflow for report generation.
  *
- * @param {Omit<SaleData, 'id'>} data - The client and sale data.
+ * @param {SaleData} data - The client and sale data, including ID for edits.
  * @returns {Promise<boolean>} - True for success, false for failure.
  */
-export const sendReportDataToN8n = async (data: Omit<SaleData, 'id'>): Promise<boolean> => {
+export const sendReportDataToN8n = async (data: SaleData): Promise<boolean> => {
      const N8N_REPORT_URL = import.meta.env.VITE_N8N_REPORT_WORKFLOW_URL;
 
     if (!N8N_REPORT_URL) {
