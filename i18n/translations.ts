@@ -23,6 +23,9 @@ export const translations: { [key: string]: { [key: string]: string } } = {
         colPurchaseDate: 'Fecha Compra',
         colEdit: 'Editar',
         editButton: 'Editar',
+        colCpf: 'CPF',
+        colPhone: 'Teléfono',
+        colPaymentSystem: 'Sistema Pago',
 
         // Form Page Titles
         formTitleNew: 'Cargar Nuevo Cliente',
@@ -112,6 +115,7 @@ export const translations: { [key: string]: { [key: string]: string } } = {
         error_n8n_report: 'Error al generar el reporte.',
         error_n8n_all_failed: 'Fallaron todos los envíos. Por favor, intente de nuevo.',
         errorFetchClients: 'Error al cargar los clientes',
+        errorClientExists: 'El cliente con este CPF ya existe.',
     },
     pt: {
         // Header
@@ -137,6 +141,9 @@ export const translations: { [key: string]: { [key: string]: string } } = {
         colPurchaseDate: 'Data da Compra',
         colEdit: 'Editar',
         editButton: 'Editar',
+        colCpf: 'CPF',
+        colPhone: 'Telefone',
+        colPaymentSystem: 'Sistema Pagto.',
         
         // Form Page Titles
         formTitleNew: 'Carregar Novo Cliente',
@@ -225,5 +232,6 @@ export const translations: { [key: string]: { [key: string]: string } } = {
         error_n8n_report: 'Erro ao gerar o relatório.',
         error_n8n_all_failed: 'Todas as submissões falharam. Por favor, tente novamente.',
         errorFetchClients: 'Erro ao carregar os clientes',
+        errorClientExists: 'O cliente com este CPF já existe.',
     },
 };

@@ -38,10 +38,11 @@ export const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit,
                     <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
                         <thead className="bg-slate-50 dark:bg-slate-700">
                             <tr>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">{t('colCpf')}</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">{t('colClient')}</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">{t('colProduct')}</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">{t('colTotal')}</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">{t('colPurchaseDate')}</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">{t('colPaymentSystem')}</th>
                                 <th scope="col" className="relative px-6 py-3">
                                     <span className="sr-only">{t('colEdit')}</span>
                                 </th>
@@ -50,18 +51,20 @@ export const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit,
                         <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
                             {clients.map((client) => (
                                 <tr key={client.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
+                                        {client.clientCpf}
+                                    </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="text-sm font-medium text-slate-900 dark:text-white">{client.clientFullName}</div>
-                                        <div className="text-sm text-slate-500 dark:text-slate-400">{client.phone}</div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="text-sm text-slate-900 dark:text-slate-300">{client.product}</div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-800 dark:text-slate-200">
-                                        R$ {client.totalProductPrice.toFixed(2)}
+                                        R$ {(client.totalProductPrice ?? 0).toFixed(2)}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
-                                        {client.purchaseDate ? new Date(client.purchaseDate + 'T00:00:00').toLocaleDateString('pt-BR') : ''}
+                                        {t(client.paymentSystem?.toLowerCase() ?? '')}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <button onClick={() => onEdit(client.id)} className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-indigo-900/50 dark:text-indigo-300 dark:hover:bg-indigo-900">
