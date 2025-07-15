@@ -24,15 +24,14 @@ const App: React.FC = () => {
     const fetchClients = useCallback(async () => {
         setIsFetchingClients(true);
         try {
-            // Fetch from n8n instead of Google Sheets
             const fetchedClients = await n8nService.fetchClientsFromN8n();
             setClients(fetchedClients);
             clientStore.setClients(fetchedClients);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : t('errorUnknown');
             showError(`${t('errorFetchClients')}: ${errorMessage}`);
-            setClients([]); // Clear clients on fetch error
-            clientStore.setClients([]); // Also clear the store
+            setClients([]); 
+            clientStore.setClients([]);
         } finally {
             setIsFetchingClients(false);
         }
@@ -44,7 +43,7 @@ const App: React.FC = () => {
     
     const handleGoHome = () => setView('home');
     const handleGoToList = () => {
-        fetchClients(); // Always refetch when going to the list
+        fetchClients();
         setView('list');
     };
     const handleGoToNewForm = () => {
@@ -71,13 +70,18 @@ const App: React.FC = () => {
         setError(null);
         setSuccessMessage(null);
         
-        // For new clients, check if CPF already exists
+        // For new clients, check if CPF already exists using a robust, normalized comparison.
         if (!formData.id && formData.clientCpf) {
-            const clientExists = clients.some(client => client.clientCpf === formData.clientCpf);
-            if (clientExists) {
-                showError(t('errorClientExists'));
-                setIsLoading(false);
-                return;
+            const normalizeCpf = (cpf: string) => (cpf || '').replace(/\D/g, '');
+            const newClientCpf = normalizeCpf(formData.clientCpf);
+
+            if (newClientCpf) { // Only check if CPF is not empty
+                const clientExists = clients.some(client => normalizeCpf(client.clientCpf) === newClientCpf);
+                if (clientExists) {
+                    showError(t('errorClientExists'));
+                    setIsLoading(false);
+                    return;
+                }
             }
         }
 
@@ -90,17 +94,13 @@ const App: React.FC = () => {
                 timestamp: formData.timestamp || new Date().toLocaleString('es-AR', { hour12: false })
             };
 
-            // 1. Send form data and files to the main n8n workflow
             setLoadingMessage(t('loading_n8n_form'));
-            // The service now handles both new and edited data (with ID)
             formSuccess = await n8nService.sendFormDataToN8n(finalData, fileObjects);
             if (!formSuccess) {
                 showError(t('error_n8n_form'));
             }
 
-            // 2. Send report data to the secondary n8n workflow
             setLoadingMessage(t('loading_n8n_report'));
-            // The service now handles both new and edited data (with ID)
             reportSuccess = await n8nService.sendReportDataToN8n(finalData);
             if (!reportSuccess) {
                 showError(t('error_n8n_report'));
@@ -112,7 +112,7 @@ const App: React.FC = () => {
                     : t('successNew');
                 showSuccess(successMsg);
                 setView('list');
-                fetchClients(); // Refresh the list from n8n
+                fetchClients(); 
             } else {
                  showError(t('error_n8n_all_failed'));
             }
@@ -125,7 +125,7 @@ const App: React.FC = () => {
             setIsLoading(false);
             setLoadingMessage(null);
         }
-    }, [t, fetchClients, clients]); // Added 'clients' to dependency array for the CPF check
+    }, [t, fetchClients, clients]);
 
     const renderView = () => {
         if (isFetchingClients && view !== 'form') {
