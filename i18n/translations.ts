@@ -1,11 +1,19 @@
-export const translations: { [key: string]: { [key: string]: string } } = {
+
+export const translations: { [key: string]: { [key:string]: string } } = {
     es: {
         // Header
         appTitle: 'Gestión de Clientes',
+        logout: 'Salir',
 
         // Language Switcher
         es: 'ES',
         pt: 'PT',
+
+        // Login Page
+        loginTitle: 'Acceso Restringido',
+        passwordLabel: 'Contraseña',
+        loginButton: 'Ingresar',
+        loginError: 'Contraseña incorrecta. Por favor, intente de nuevo.',
 
         // Home Page
         welcome: 'Bienvenido',
@@ -17,15 +25,15 @@ export const translations: { [key: string]: { [key: string]: string } } = {
         clientListTitle: 'Lista de Clientes',
         newButton: 'Cargar Nuevo',
         noClients: 'No hay clientes cargados todavía.',
+        noClientsFound: 'No se encontraron clientes.',
+        searchPlaceholderCpf: 'Buscar por CPF...',
         colClient: 'Cliente',
         colProduct: 'Producto',
         colTotal: 'Total',
-        colPurchaseDate: 'Fecha Compra',
         colEdit: 'Editar',
         editButton: 'Editar',
         colCpf: 'CPF',
-        colPhone: 'Teléfono',
-        colPaymentSystem: 'Sistema Pago',
+        colPaymentSystem: 'Modo de Pago',
 
         // Form Page Titles
         formTitleNew: 'Cargar Nuevo Cliente',
@@ -120,10 +128,17 @@ export const translations: { [key: string]: { [key: string]: string } } = {
     pt: {
         // Header
         appTitle: 'Gerenciamento de Clientes',
+        logout: 'Sair',
 
         // Language Switcher
         es: 'ES',
         pt: 'PT',
+
+        // Login Page
+        loginTitle: 'Acesso Restrito',
+        passwordLabel: 'Senha',
+        loginButton: 'Entrar',
+        loginError: 'Senha incorreta. Por favor, tente novamente.',
 
         // Home Page
         welcome: 'Bem-vindo',
@@ -135,15 +150,15 @@ export const translations: { [key: string]: { [key: string]: string } } = {
         clientListTitle: 'Lista de Clientes',
         newButton: 'Carregar Novo',
         noClients: 'Nenhum cliente carregado ainda.',
+        noClientsFound: 'Nenhum cliente encontrado.',
+        searchPlaceholderCpf: 'Buscar por CPF...',
         colClient: 'Cliente',
         colProduct: 'Produto',
         colTotal: 'Total',
-        colPurchaseDate: 'Data da Compra',
         colEdit: 'Editar',
         editButton: 'Editar',
         colCpf: 'CPF',
-        colPhone: 'Telefone',
-        colPaymentSystem: 'Sistema Pagto.',
+        colPaymentSystem: 'Forma de Pagamento',
         
         // Form Page Titles
         formTitleNew: 'Carregar Novo Cliente',
