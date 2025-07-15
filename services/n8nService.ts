@@ -27,7 +27,22 @@ export const fetchClientsFromN8n = async (): Promise<SaleData[]> => {
 
         const data = JSON.parse(textBody);
         
-        return Array.isArray(data) ? data as SaleData[] : [];
+        // n8n can return data in several formats.
+        // 1. A direct array of objects: `[{...}, {...}]`
+        // 2. An array of items, where each item has a `json` property: `[{ json: {...} }, { json: {...} }]`
+        // This logic handles both common n8n GET webhook response formats gracefully.
+        if (Array.isArray(data)) {
+            // If the first element has a 'json' property, we assume it's the n8n wrapper format.
+            if (data.length > 0 && data[0].hasOwnProperty('json')) {
+                // Extracts the actual client data from each item in the array.
+                return data.map(item => item.json) as SaleData[];
+            }
+            // Otherwise, we assume it's already a direct array of client data.
+            return data as SaleData[];
+        }
+
+        // If data is not an array, it's an unexpected format. Return empty.
+        return [];
 
     } catch (error) {
         console.error("Error fetching clients from n8n:", error);
