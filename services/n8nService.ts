@@ -1,7 +1,9 @@
+
 import { SaleData } from '../types';
 
 /**
- * Fetches the list of all clients from the n8n webhook.
+ * Fetches the list of all clients from the n8n webhook. This function is robust
+ * and can handle several common n8n response formats.
  *
  * @returns {Promise<SaleData[]>} - A promise that resolves to an array of client data.
  */
@@ -21,32 +23,40 @@ export const fetchClientsFromN8n = async (): Promise<SaleData[]> => {
         }
         
         const textBody = await response.text();
-        if (!textBody) { // Handle empty response body
-            return [];
+        if (!textBody) {
+            return []; // Handle cases where n8n returns an empty body.
         }
 
         const data = JSON.parse(textBody);
         
-        // n8n can return data in several formats.
-        // 1. A direct array of objects: `[{...}, {...}]`
-        // 2. An array of items, where each item has a `json` property: `[{ json: {...} }, { json: {...} }]`
-        // This logic handles both common n8n GET webhook response formats gracefully.
+        let clientList: any[] = [];
+
+        // Case 1: The response is already the array of clients. `[{}, {}]`
         if (Array.isArray(data)) {
-            // If the first element has a 'json' property, we assume it's the n8n wrapper format.
-            if (data.length > 0 && data[0].hasOwnProperty('json')) {
-                // Extracts the actual client data from each item in the array.
-                return data.map(item => item.json) as SaleData[];
+            clientList = data;
+        } 
+        // Case 2: The response is an object containing the array of clients. `{"data": [{}, {}]}`
+        else if (typeof data === 'object' && data !== null) {
+            // Find the first property that is an array and assume it's our list.
+            const arrayKey = Object.keys(data).find(key => Array.isArray(data[key]));
+            if (arrayKey) {
+                clientList = data[arrayKey];
             }
-            // Otherwise, we assume it's already a direct array of client data.
-            return data as SaleData[];
         }
 
-        // If data is not an array, it's an unexpected format. Return empty.
-        return [];
+        // Now that we (hopefully) have the list, check for the common n8n `item.json` wrapper.
+        // This handles the `[{ json: {...} }, { json: {...} }]` format.
+        if (clientList.length > 0 && clientList[0] && clientList[0].hasOwnProperty('json')) {
+            // Extract the `json` property from each item.
+            return clientList.map(item => item.json).filter(Boolean) as SaleData[];
+        }
+
+        // If no special format is detected, return the list as is.
+        return clientList as SaleData[];
 
     } catch (error) {
-        console.error("Error fetching clients from n8n:", error);
-        throw error;
+        console.error("Error fetching or parsing clients from n8n:", error);
+        throw error; // Re-throw the error to be caught by the calling function in App.tsx
     }
 };
 
@@ -74,23 +84,16 @@ export const sendFormDataToN8n = async (
 
     const formData = new FormData();
 
-    // Append each non-file data field as a separate part in the multipart form.
     Object.entries(data).forEach(([key, value]) => {
-        // We check if the key exists in the `files` object. If it does, it's a file field,
-        // and we should not append its string value (the filename). The actual file binary
-        // will be appended in the next step.
         if (!Object.prototype.hasOwnProperty.call(files, key)) {
             if (value === null || value === undefined) {
                 formData.append(key, '');
             } else {
-                // FormData automatically converts values to strings, which is standard.
                 formData.append(key, String(value));
             }
         }
     });
 
-    // Append each file as a binary part.
-    // The `key` (e.g., 'photoStoreFileName') will be the field name in the multipart form.
     for (const key in files) {
         if (files[key]) {
             formData.append(key, files[key], files[key].name);
@@ -101,13 +104,9 @@ export const sendFormDataToN8n = async (
         const response = await fetch(N8N_FORM_URL, {
             method: 'POST',
             body: formData,
-            // IMPORTANT: Do not set the 'Content-Type' header manually when using FormData.
-            // The browser will automatically set it to 'multipart/form-data' and include
-            // the necessary boundary string.
         });
 
         if (!response.ok) {
-            // Try to get more detailed error from the response body for debugging
             const errorBody = await response.text();
             console.error(`n8n form workflow returned an error: ${response.status} ${response.statusText}. Response: ${errorBody}`);
             return false;
