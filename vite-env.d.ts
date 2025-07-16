@@ -19,6 +19,11 @@ interface ImportMetaEnv {
   readonly VITE_N8N_GET_CLIENTS_URL?: string;
   
   /**
+   * The webhook URL to delete a client in n8n.
+   */
+  readonly VITE_N8N_DELETE_CLIENT_URL?: string;
+
+  /**
    * (Legacy) The URL for the read-only Google Apps Script that fetches the client list.
    */
   readonly VITE_GOOGLE_SHEETS_READ_URL?: string;
