@@ -9,6 +9,7 @@ import { ClientListPage } from './pages/ClientListPage';
 import { ClientFormPage } from './pages/ClientFormPage';
 import { useLanguage } from './context/LanguageContext';
 import { LoginPage } from './pages/LoginPage';
+import { generateExcel } from './services/excelGenerator';
 
 type View = 'home' | 'list' | 'form';
 
@@ -88,6 +89,7 @@ const App: React.FC = () => {
         setIsLoading(true);
         setError(null);
         setSuccessMessage(null);
+        setLoadingMessage(t('loading'));
         
         if (!formData.id && formData.clientCpf) {
             const normalizeCpf = (cpf: string) => (cpf || '').replace(/\D/g, '');
@@ -106,24 +108,15 @@ const App: React.FC = () => {
             }
         }
 
-        let formSuccess = false;
-        let reportSuccess = false;
-
         try {
             const finalData = {
                 ...formData,
                 timestamp: formData.timestamp || new Date().toLocaleString('es-AR', { hour12: false })
             };
 
-            setLoadingMessage(t('loading_n8n_form'));
-            formSuccess = await n8nService.sendFormDataToN8n(finalData, fileObjects);
-            if (!formSuccess) showError(t('error_n8n_form'));
-            
-            setLoadingMessage(t('loading_n8n_report'));
-            reportSuccess = await n8nService.sendReportDataToN8n(finalData);
-            if (!reportSuccess) showError(t('error_n8n_report'));
+            const success = await n8nService.sendFormDataToN8n(finalData, fileObjects);
 
-            if (formSuccess || reportSuccess) {
+            if (success) {
                  const successMsg = formData.id 
                     ? t('successUpdate', { clientName: formData.clientFullName })
                     : t('successNew');
@@ -136,7 +129,7 @@ const App: React.FC = () => {
                     setView('home');
                 }
             } else {
-                 showError(t('error_n8n_all_failed'));
+                 showError(t('error_n8n_form'));
             }
 
         } catch (err) {
@@ -220,17 +213,14 @@ const App: React.FC = () => {
         setSuccessMessage(null);
 
         try {
-            const success = await n8nService.sendReportDataToN8n(client);
-            if (success) {
-                showSuccess(t('successGenerateSummary', { clientName: client.clientFullName }));
-            } else {
-                showError(t('errorGenerateSummary', { clientName: client.clientFullName }));
-            }
+            generateExcel(client);
+            showSuccess(t('successGenerateSummary', { clientName: client.clientFullName }));
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : t('errorUnknown');
             showError(`${t('errorGenerateSummary', { clientName: client.clientFullName })}: ${errorMessage}`);
         } finally {
-            setIsGeneratingSummaryId(null);
+            // Give a small delay for the user to see the loading state and perceive action
+            setTimeout(() => setIsGeneratingSummaryId(null), 500);
         }
     };
 
