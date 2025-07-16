@@ -131,15 +131,21 @@ export const sendFormDataToN8n = async (
 
     const formData = new FormData();
 
-    // Append all text-based data fields. If a file is being uploaded for a given key,
-    // we skip appending the text version of its filename here, as the filename will be
-    // included with the file data itself. This prevents sending two parts with the same
-    // name, which can confuse backend parsers.
+    // Append all text-based data fields from the 'data' object.
     Object.entries(data).forEach(([key, value]) => {
+        // The client ID is sent as 'row_number' later, so we skip it here to avoid duplication
+        // and potential confusion in the n8n workflow.
+        if (key === 'id') {
+            return;
+        }
+
+        // If a new file is being uploaded for this key, we skip appending the text version 
+        // of its filename. The file (with its name) will be appended in the next loop.
         if (files[key]) {
-            return; // Skip if a file is being uploaded for this key.
+            return;
         }
         
+        // Append the text value, ensuring null/undefined becomes an empty string.
         if (value === null || value === undefined) {
             formData.append(key, '');
         } else {
@@ -152,7 +158,7 @@ export const sendFormDataToN8n = async (
         formData.append(key, file, file.name);
     });
     
-    // For updates, send the row_number so the n8n workflow knows which record to modify.
+    // For updates, send the 'row_number' so the n8n workflow knows which record to modify.
     if (data.id && !data.id.startsWith('temp_')) {
         formData.append('row_number', data.id);
     }
