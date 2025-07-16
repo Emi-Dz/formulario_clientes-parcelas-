@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { SaleData, PaymentSystem, Language, ClientType } from '../types';
 import { PAYMENT_OPTIONS, CLIENT_TYPE_OPTIONS } from '../constants';
 import { useLanguage } from '../context/LanguageContext';
@@ -50,12 +50,14 @@ interface DataEntryFormProps {
     isLoading: boolean;
     loadingMessage: string | null;
     isEditMode: boolean;
+    error: string | null;
 }
 
-export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSubmit, onCancel, isLoading, loadingMessage, isEditMode }) => {
+export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSubmit, onCancel, isLoading, loadingMessage, isEditMode, error }) => {
     const [formData, setFormData] = useState<SaleData>(initialData);
     const [fileObjects, setFileObjects] = useState<{ [key: string]: File }>({});
     const { t } = useLanguage();
+    const errorRef = useRef<HTMLDivElement>(null);
 
     const calculateInstallmentPrice = useCallback(() => {
         const total = formData.totalProductPrice || 0;
@@ -68,6 +70,12 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
     useEffect(() => {
         calculateInstallmentPrice();
     }, [calculateInstallmentPrice]);
+    
+    useEffect(() => {
+        if (error && errorRef.current) {
+            errorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, [error]);
 
     const formatCpf = (value: string) => {
         const onlyNumbers = value.replace(/\D/g, '');
@@ -246,6 +254,14 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
             <Fieldset legend={t('obs')}>
                  <Input as="textarea" id="notes" name="notes" value={formData.notes} onChange={handleChange} wrapperClass="md:col-span-2" rows={4} placeholder={t('placeholder_notes')} />
             </Fieldset>
+
+            {/* Error Message Display */}
+            {error && (
+                <div ref={errorRef} className="my-2 p-4 bg-red-100 dark:bg-red-900 border-l-4 border-red-500 text-red-700 dark:text-red-200 rounded-r-lg shadow-md" role="alert">
+                    <p className="font-bold">{t('errorPrefix')}</p>
+                    <p>{error}</p>
+                </div>
+            )}
 
             {/* Submission Buttons */}
             <div className="pt-4 flex justify-end space-x-4">
