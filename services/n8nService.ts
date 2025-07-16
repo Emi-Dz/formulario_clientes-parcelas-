@@ -22,7 +22,14 @@ export const fetchClientsFromN8n = async (): Promise<SaleData[]> => {
             throw new Error(`Failed to fetch clients from n8n: ${response.status} ${response.statusText}. Body: ${errorBody}`);
         }
         
-        const responseBody = await response.json();
+        const responseText = await response.text();
+        if (!responseText) {
+            // Webhook returned 200 OK but with an empty body.
+            // This can happen if there are no clients. Treat as an empty list.
+            return [];
+        }
+        const responseBody = JSON.parse(responseText);
+
         let clientListRaw: any[] | null = null;
 
         // Try to find the array of clients in various common n8n response structures.
