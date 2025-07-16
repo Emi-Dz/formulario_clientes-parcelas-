@@ -16,7 +16,7 @@ export const fetchClientsFromN8n = async (): Promise<SaleData[]> => {
     }
 
     try {
-        const response = await fetch(GET_CLIENTS_URL, { method: 'GET', mode: 'cors' });
+        const response = await fetch(GET_CLIENTS_URL, { method: 'GET', mode: 'cors', cache: 'no-cache' });
         if (!response.ok) {
             const errorBody = await response.text();
             throw new Error(`Failed to fetch clients from n8n: ${response.status} ${response.statusText}. Body: ${errorBody}`);
