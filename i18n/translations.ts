@@ -1,3 +1,4 @@
+
 export const translations: { [key: string]: { [key:string]: string } } = {
     es: {
         // Header
@@ -34,6 +35,7 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         actions: 'Acciones',
         editButton: 'Editar',
         deleteButton: 'Borrar',
+        generateSummaryButton: 'Generar Resumen',
         colCpf: 'CPF',
         colPaymentSystem: 'Modo de Pago',
 
@@ -125,6 +127,7 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         successUpdate: 'Cliente {{clientName}} actualizado exitosamente!',
         successNew: 'Nuevo cliente cargado exitosamente!',
         successDelete: 'Cliente {{clientName}} borrado exitosamente.',
+        successGenerateSummary: 'Resumen para {{clientName}} generado exitosamente.',
         errorPrefix: 'Error',
         errorUnknown: 'Ocurrió un error desconocido.',
         error_n8n_form: 'Error al enviar los datos del formulario.',
@@ -133,6 +136,7 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         errorFetchClients: 'Error al cargar los clientes',
         errorClientExists: 'El cliente con este CPF ya existe.',
         errorDelete: 'Error al borrar el cliente {{clientName}}.',
+        errorGenerateSummary: 'Error al generar el resumen para {{clientName}}.',
     },
     pt: {
         // Header
@@ -169,6 +173,7 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         actions: 'Ações',
         editButton: 'Editar',
         deleteButton: 'Excluir',
+        generateSummaryButton: 'Gerar Resumo',
         colCpf: 'CPF',
         colPaymentSystem: 'Forma de Pagamento',
 
@@ -259,6 +264,7 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         successUpdate: 'Cliente {{clientName}} atualizado com sucesso!',
         successNew: 'Novo cliente carregado com sucesso!',
         successDelete: 'Cliente {{clientName}} excluído com sucesso.',
+        successGenerateSummary: 'Resumo para {{clientName}} gerado com sucesso.',
         errorPrefix: 'Erro',
         errorUnknown: 'Ocorreu um erro desconhecido.',
         error_n8n_form: 'Erro ao enviar os dados do formulário.',
@@ -267,5 +273,6 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         errorFetchClients: 'Erro ao carregar os clientes',
         errorClientExists: 'O cliente com este CPF já existe.',
         errorDelete: 'Erro ao excluir o cliente {{clientName}}.',
+        errorGenerateSummary: 'Erro ao gerar o resumo para {{clientName}}.',
     },
 };
