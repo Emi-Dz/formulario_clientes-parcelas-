@@ -110,12 +110,12 @@ export const fetchClientsFromN8n = async (): Promise<SaleData[]> => {
 
 /**
  * Sends the complete form data, including files, to the primary n8n webhook.
- * This function constructs a `multipart/form-data` payload where each piece of data
- * is a separate part, and each file is a separate binary part. This is a common
- * format that is easily parsable by services like n8n.
+ * This function constructs a `multipart/form-data` payload. It intelligently sends
+ * either the file object (for new uploads) or the filename string (for existing files),
+ * but not both for the same field, to prevent server-side ambiguity that could cause hangs.
  *
  * @param {SaleData} data - The client and sale data object, including ID for edits.
- * @param {{ [key: string]: File }} files - A map of field names to File objects.
+ * @param {{ [key: string]: File }} files - A map of field names to File objects for new uploads.
  * @returns {Promise<boolean>} - True for success, false for failure.
  */
 export const sendFormDataToN8n = async (
@@ -126,29 +126,33 @@ export const sendFormDataToN8n = async (
 
     if (!N8N_FORM_URL) {
         console.warn("VITE_N8N_FORM_WORKFLOW_URL not set. Skipping form submission to n8n.");
-        return true; // Don't block the process if this one isn't configured
+        return true;
     }
 
     const formData = new FormData();
 
+    // Append all text-based data fields. If a file is being uploaded for a given key,
+    // we skip appending the text version of its filename here, as the filename will be
+    // included with the file data itself. This prevents sending two parts with the same
+    // name, which can confuse backend parsers.
     Object.entries(data).forEach(([key, value]) => {
-        if (!Object.prototype.hasOwnProperty.call(files, key)) {
-            if (value === null || value === undefined) {
-                formData.append(key, '');
-            } else {
-                formData.append(key, String(value));
-            }
+        if (files[key]) {
+            return; // Skip if a file is being uploaded for this key.
+        }
+        
+        if (value === null || value === undefined) {
+            formData.append(key, '');
+        } else {
+            formData.append(key, String(value));
         }
     });
 
-    for (const key in files) {
-        if (files[key]) {
-            formData.append(key, files[key], files[key].name);
-        }
-    }
+    // Append the actual file data for any new files.
+    Object.entries(files).forEach(([key, file]) => {
+        formData.append(key, file, file.name);
+    });
     
     // For updates, send the row_number so the n8n workflow knows which record to modify.
-    // The client ID is the row_number from the Google Sheet.
     if (data.id && !data.id.startsWith('temp_')) {
         formData.append('row_number', data.id);
     }
