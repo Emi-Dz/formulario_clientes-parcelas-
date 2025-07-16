@@ -178,51 +178,6 @@ export const sendFormDataToN8n = async (
 };
 
 /**
- * Sends just the JSON data to the secondary n8n workflow for report generation.
- *
- * @param {SaleData} data - The client and sale data, including ID for edits.
- * @returns {Promise<boolean>} - True for success, false for failure.
- */
-export const sendReportDataToN8n = async (data: SaleData): Promise<boolean> => {
-     const N8N_REPORT_URL = import.meta.env.VITE_N8N_REPORT_WORKFLOW_URL;
-
-    if (!N8N_REPORT_URL) {
-        console.warn("VITE_N8N_REPORT_WORKFLOW_URL not set. Skipping report submission to n8n.");
-        return true; // Don't block the process if this one isn't configured
-    }
-    
-    // Create a mutable copy to avoid changing the original object.
-    const reportData: any = { ...data };
-
-    // For updates, send the row_number so the n8n workflow knows which record to modify.
-    if (reportData.id && !reportData.id.startsWith('temp_')) {
-        reportData.row_number = reportData.id;
-    }
-
-    try {
-        const response = await fetch(N8N_REPORT_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(reportData),
-        });
-
-        if (!response.ok) {
-            console.error(`n8n report workflow returned an error: ${response.status} ${response.statusText}`);
-            return false;
-        }
-        
-        console.log("Report data successfully sent to n8n.");
-        return true;
-
-    } catch (error) {
-        console.error("Error sending report data to n8n:", error);
-        return false;
-    }
-};
-
-/**
  * Sends a request to an n8n webhook to delete a client.
  *
  * @param {string} clientId - The ID of the client to delete (corresponds to the row_number).
