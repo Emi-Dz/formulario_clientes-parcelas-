@@ -16,33 +16,57 @@ export const fetchClientsFromN8n = async (): Promise<SaleData[]> => {
     }
 
     try {
-        const response = await fetch(GET_CLIENTS_URL, { method: 'GET', mode: 'cors' });
+        const response = await fetch(GET_CLIENTS_URL, { method: 'GET', mode: 'cors', cache: 'no-cache' });
         if (!response.ok) {
             const errorBody = await response.text();
             throw new Error(`Failed to fetch clients from n8n: ${response.status} ${response.statusText}. Body: ${errorBody}`);
         }
         
-        const responseBody = await response.json();
-        let clientListRaw: any[] = [];
+        const responseText = await response.text();
+        if (!responseText) {
+            // Webhook returned 200 OK but with an empty body.
+            // This can happen if there are no clients. Treat as an empty list.
+            return [];
+        }
+        const responseBody = JSON.parse(responseText);
 
-        // Intelligently find the array of clients within the response from n8n.
+        let clientListRaw: any[] | null = null;
+
+        // Try to find the array of clients in various common n8n response structures.
         if (Array.isArray(responseBody)) {
+            // Case 1: The response body is the array of clients.
+            // This could be direct [ {client1}, {client2} ] or wrapped [ {json: client1}, {json: client2} ]
             clientListRaw = responseBody;
         } else if (typeof responseBody === 'object' && responseBody !== null) {
-            // Find the first property in the object that is an array.
-            const potentialArray = Object.values(responseBody).find(Array.isArray);
-            if (potentialArray) {
-                clientListRaw = potentialArray;
+            // Case 2: The response is an object, look for a property containing the array.
+            if (Array.isArray(responseBody.data)) {
+                // e.g., { "data": [...] }
+                clientListRaw = responseBody.data;
+            } else if (Array.isArray(responseBody.items)) {
+                // e.g., { "items": [...] }
+                clientListRaw = responseBody.items;
+            } else if (Array.isArray(responseBody.results)) {
+                // e.g., { "results": [...] }
+                clientListRaw = responseBody.results;
+            } else {
+                // Fallback: find the first property that is an array.
+                const potentialArray = Object.values(responseBody).find(val => Array.isArray(val));
+                if (potentialArray && Array.isArray(potentialArray)) {
+                    clientListRaw = potentialArray;
+                }
             }
         }
-        
-        // Handle a common n8n pattern where each item is wrapped, e.g., [{json: {...}}]
-        if (clientListRaw.length > 0 && clientListRaw[0] && clientListRaw[0].json) {
-           clientListRaw = clientListRaw.map((item: any) => item.json);
+
+        // If no array was found, warn and return empty.
+        if (!Array.isArray(clientListRaw)) {
+            console.warn("Could not find a client array in the response from n8n. Response body:", responseBody);
+            return [];
         }
 
-        if (clientListRaw.length === 0 && (typeof responseBody === 'object' && responseBody !== null)) {
-             console.warn("Could not find a client array in the response from n8n:", responseBody);
+        // n8n often wraps each item's data in a `json` property.
+        // We check the first item to see if this unwrapping is needed.
+        if (clientListRaw.length > 0 && clientListRaw[0] && typeof clientListRaw[0] === 'object' && clientListRaw[0].json) {
+           clientListRaw = clientListRaw.map((item: any) => item.json);
         }
 
         // Map the raw data from Google Sheets/n8n to the app's SaleData structure.
@@ -110,12 +134,12 @@ export const fetchClientsFromN8n = async (): Promise<SaleData[]> => {
 
 /**
  * Sends the complete form data, including files, to the primary n8n webhook.
- * This function constructs a `multipart/form-data` payload where each piece of data
- * is a separate part, and each file is a separate binary part. This is a common
- * format that is easily parsable by services like n8n.
+ * This function constructs a `multipart/form-data` payload. It's carefully
+ * constructed to preserve existing file names during an edit, while uploading
+ * new files.
  *
  * @param {SaleData} data - The client and sale data object, including ID for edits.
- * @param {{ [key: string]: File }} files - A map of field names to File objects.
+ * @param {{ [key: string]: File }} files - A map of field names to newly uploaded File objects.
  * @returns {Promise<boolean>} - True for success, false for failure.
  */
 export const sendFormDataToN8n = async (
@@ -126,31 +150,34 @@ export const sendFormDataToN8n = async (
 
     if (!N8N_FORM_URL) {
         console.warn("VITE_N8N_FORM_WORKFLOW_URL not set. Skipping form submission to n8n.");
-        return true; // Don't block the process if this one isn't configured
+        return true; 
     }
 
     const formData = new FormData();
 
+    // 1. Append all data from the form state as string values.
+    // This includes existing filenames and the filenames of new files.
     Object.entries(data).forEach(([key, value]) => {
-        if (!Object.prototype.hasOwnProperty.call(files, key)) {
-            if (value === null || value === undefined) {
-                formData.append(key, '');
-            } else {
-                formData.append(key, String(value));
-            }
+         if (value === null || value === undefined) {
+            formData.append(key, '');
+        } else {
+            formData.append(key, String(value));
         }
     });
-
-    for (const key in files) {
-        if (files[key]) {
-            formData.append(key, files[key], files[key].name);
+    
+    // 2. For each newly uploaded file, overwrite the string value in FormData
+    // with the actual file object. This ensures that for a given field (e.g., 'photoStoreFileName'),
+    // we send EITHER the old filename (if unchanged) OR the new file object, but never both.
+    Object.entries(files).forEach(([key, file]) => {
+        if(file) {
+            formData.set(key, file, file.name);
         }
-    }
+    });
     
     // For updates, send the row_number so the n8n workflow knows which record to modify.
     // The client ID is the row_number from the Google Sheet.
     if (data.id && !data.id.startsWith('temp_')) {
-        formData.append('row_number', data.id);
+        formData.set('row_number', data.id);
     }
 
     try {
@@ -173,51 +200,6 @@ export const sendFormDataToN8n = async (
         if (error instanceof TypeError) {
              console.error("A network error occurred. Check the connection and CORS settings for the n8n webhook.");
         }
-        return false;
-    }
-};
-
-/**
- * Sends just the JSON data to the secondary n8n workflow for report generation.
- *
- * @param {SaleData} data - The client and sale data, including ID for edits.
- * @returns {Promise<boolean>} - True for success, false for failure.
- */
-export const sendReportDataToN8n = async (data: SaleData): Promise<boolean> => {
-     const N8N_REPORT_URL = import.meta.env.VITE_N8N_REPORT_WORKFLOW_URL;
-
-    if (!N8N_REPORT_URL) {
-        console.warn("VITE_N8N_REPORT_WORKFLOW_URL not set. Skipping report submission to n8n.");
-        return true; // Don't block the process if this one isn't configured
-    }
-    
-    // Create a mutable copy to avoid changing the original object.
-    const reportData: any = { ...data };
-
-    // For updates, send the row_number so the n8n workflow knows which record to modify.
-    if (reportData.id && !reportData.id.startsWith('temp_')) {
-        reportData.row_number = reportData.id;
-    }
-
-    try {
-        const response = await fetch(N8N_REPORT_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(reportData),
-        });
-
-        if (!response.ok) {
-            console.error(`n8n report workflow returned an error: ${response.status} ${response.statusText}`);
-            return false;
-        }
-        
-        console.log("Report data successfully sent to n8n.");
-        return true;
-
-    } catch (error) {
-        console.error("Error sending report data to n8n:", error);
         return false;
     }
 };

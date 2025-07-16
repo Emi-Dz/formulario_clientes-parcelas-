@@ -9,11 +9,6 @@ interface ImportMetaEnv {
   readonly VITE_N8N_FORM_WORKFLOW_URL?: string;
 
   /**
-   * The webhook URL for the secondary n8n workflow that handles generating individual reports.
-   */
-  readonly VITE_N8N_REPORT_WORKFLOW_URL?: string;
-
-  /**
    * The webhook URL to fetch all clients from n8n.
    */
   readonly VITE_N8N_GET_CLIENTS_URL?: string;

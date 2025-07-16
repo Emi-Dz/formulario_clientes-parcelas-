@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { DataEntryForm } from '../components/DataEntryForm';
 import { SaleData, PaymentSystem } from '../types';
@@ -82,6 +83,7 @@ export const ClientFormPage: React.FC<ClientFormPageProps> = ({ editingClientId,
                 {isEditMode ? t('formTitleEdit') : t('formTitleNew')}
             </h1>
             <DataEntryForm
+                key={editingClientId || 'new'}
                 initialData={initialData as SaleData}
                 onSubmit={onSave}
                 onCancel={onCancel}
@@ -92,4 +94,3 @@ export const ClientFormPage: React.FC<ClientFormPageProps> = ({ editingClientId,
         </div>
     );
 };
-

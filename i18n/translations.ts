@@ -1,3 +1,4 @@
+
 export const translations: { [key: string]: { [key:string]: string } } = {
     es: {
         // Header
@@ -23,6 +24,8 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         // Client List Page
         clientListTitle: 'Lista de Clientes',
         newButton: 'Cargar Nuevo',
+        refreshButton: 'Actualizar',
+        refreshing: 'Actualizando...',
         noClients: 'No hay clientes cargados todavía.',
         noClientsFound: 'No se encontraron clientes.',
         searchPlaceholderCpf: 'Buscar por CPF...',
@@ -34,6 +37,7 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         actions: 'Acciones',
         editButton: 'Editar',
         deleteButton: 'Borrar',
+        generateSummaryButton: 'Generar Resumen',
         colCpf: 'CPF',
         colPaymentSystem: 'Modo de Pago',
 
@@ -115,24 +119,22 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         // Form Buttons & Messages
         cancel: 'Cancelar',
         loading: 'Procesando...',
-        loading_n8n_form: 'Enviando formulario...',
-        loading_n8n_report: 'Generando reporte...',
         loading_clients: 'Cargando clientes...',
         saveChanges: 'Guardar Cambios',
-        submitAndGenerate: 'Cargar y Generar Docs',
+        submitNewClient: 'Cargar Cliente',
         
         // App Level Messages
         successUpdate: 'Cliente {{clientName}} actualizado exitosamente!',
         successNew: 'Nuevo cliente cargado exitosamente!',
         successDelete: 'Cliente {{clientName}} borrado exitosamente.',
+        successGenerateSummary: 'Resumen para {{clientName}} generado. La descarga comenzará pronto.',
         errorPrefix: 'Error',
         errorUnknown: 'Ocurrió un error desconocido.',
         error_n8n_form: 'Error al enviar los datos del formulario.',
-        error_n8n_report: 'Error al generar el reporte.',
-        error_n8n_all_failed: 'Fallaron todos los envíos. Por favor, intente de nuevo.',
         errorFetchClients: 'Error al cargar los clientes',
         errorClientExists: 'El cliente con este CPF ya existe.',
         errorDelete: 'Error al borrar el cliente {{clientName}}.',
+        errorGenerateSummary: 'Error al generar el resumen para {{clientName}}.',
     },
     pt: {
         // Header
@@ -158,6 +160,8 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         // Client List Page
         clientListTitle: 'Lista de Clientes',
         newButton: 'Carregar Novo',
+        refreshButton: 'Atualizar',
+        refreshing: 'Atualizando...',
         noClients: 'Nenhum cliente carregado ainda.',
         noClientsFound: 'Nenhum cliente encontrado.',
         searchPlaceholderCpf: 'Buscar por CPF...',
@@ -169,6 +173,7 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         actions: 'Ações',
         editButton: 'Editar',
         deleteButton: 'Excluir',
+        generateSummaryButton: 'Gerar Resumo',
         colCpf: 'CPF',
         colPaymentSystem: 'Forma de Pagamento',
 
@@ -249,23 +254,21 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         // Form Buttons & Messages
         cancel: 'Cancelar',
         loading: 'Processando...',
-        loading_n8n_form: 'Enviando formulário...',
-        loading_n8n_report: 'Gerando relatório...',
         loading_clients: 'Carregando clientes...',
         saveChanges: 'Salvar Alterações',
-        submitAndGenerate: 'Carregar e Gerar Docs',
+        submitNewClient: 'Carregar Cliente',
 
         // App Level Messages
         successUpdate: 'Cliente {{clientName}} atualizado com sucesso!',
         successNew: 'Novo cliente carregado com sucesso!',
         successDelete: 'Cliente {{clientName}} excluído com sucesso.',
+        successGenerateSummary: 'Resumo para {{clientName}} gerado. O download começará em breve.',
         errorPrefix: 'Erro',
         errorUnknown: 'Ocorreu um erro desconhecido.',
         error_n8n_form: 'Erro ao enviar os dados do formulário.',
-        error_n8n_report: 'Erro ao gerar o relatório.',
-        error_n8n_all_failed: 'Todas as submissões falharam. Por favor, tente novamente.',
         errorFetchClients: 'Erro ao carregar os clientes',
         errorClientExists: 'O cliente com este CPF já existe.',
         errorDelete: 'Erro ao excluir o cliente {{clientName}}.',
+        errorGenerateSummary: 'Erro ao gerar o resumo para {{clientName}}.',
     },
 };
