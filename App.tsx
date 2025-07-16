@@ -28,9 +28,11 @@ const App: React.FC = () => {
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const { t } = useLanguage();
 
-    // --- Delete State ---
+    // --- State for async actions on list items ---
     const [clientToDelete, setClientToDelete] = useState<{ id: string; name: string } | null>(null);
     const [isDeleting, setIsDeleting] = useState<boolean>(false);
+    const [isGeneratingSummaryId, setIsGeneratingSummaryId] = useState<string | null>(null);
+
 
     const fetchClients = useCallback(async () => {
         setIsFetchingClients(true);
@@ -169,7 +171,7 @@ const App: React.FC = () => {
         setIsLoginVisible(false);
     };
 
-    // --- Delete Handlers ---
+    // --- Action Handlers ---
     const handleRequestDelete = (id: string, name: string) => {
         setClientToDelete({ id, name });
     };
@@ -206,6 +208,32 @@ const App: React.FC = () => {
         }
     };
 
+    const handleGenerateSummary = async (clientId: string) => {
+        const client = clients.find(c => c.id === clientId);
+        if (!client) {
+            showError('Client not found'); // This should not happen
+            return;
+        }
+
+        setIsGeneratingSummaryId(clientId);
+        setError(null);
+        setSuccessMessage(null);
+
+        try {
+            const success = await n8nService.sendReportDataToN8n(client);
+            if (success) {
+                showSuccess(t('successGenerateSummary', { clientName: client.clientFullName }));
+            } else {
+                showError(t('errorGenerateSummary', { clientName: client.clientFullName }));
+            }
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : t('errorUnknown');
+            showError(`${t('errorGenerateSummary', { clientName: client.clientFullName })}: ${errorMessage}`);
+        } finally {
+            setIsGeneratingSummaryId(null);
+        }
+    };
+
 
     const renderView = () => {
         if (isFetchingClients && view === 'list') {
@@ -215,7 +243,14 @@ const App: React.FC = () => {
         switch (view) {
             case 'list':
                  // This view is protected by the handleGoToList logic
-                return <ClientListPage clients={clients} onEdit={handleGoToEditForm} onNew={handleGoToNewForm} onDelete={handleRequestDelete} />;
+                return <ClientListPage 
+                    clients={clients} 
+                    onEdit={handleGoToEditForm} 
+                    onNew={handleGoToNewForm} 
+                    onDelete={handleRequestDelete}
+                    onGenerateSummary={handleGenerateSummary}
+                    generatingSummaryId={isGeneratingSummaryId}
+                />;
             case 'form':
                 return (
                     <ClientFormPage 
