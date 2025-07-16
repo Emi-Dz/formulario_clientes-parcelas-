@@ -10,6 +10,8 @@ interface ClientListPageProps {
     onDelete: (id: string, name: string) => void;
     onGenerateSummary: (id: string) => void;
     generatingSummaryId: string | null;
+    onRefresh: () => void;
+    isRefreshing: boolean;
 }
 
 const EditIcon = () => (
@@ -37,8 +39,20 @@ const LoadingSpinnerIcon = () => (
     </svg>
 );
 
+const RefreshIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
+        <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+    </svg>
+);
 
-export const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit, onNew, onDelete, onGenerateSummary, generatingSummaryId }) => {
+const NewPlusIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
+        <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+    </svg>
+);
+
+
+export const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit, onNew, onDelete, onGenerateSummary, generatingSummaryId, onRefresh, isRefreshing }) => {
     const { t } = useLanguage();
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -61,12 +75,31 @@ export const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit,
         <div className="bg-white dark:bg-slate-800 p-6 md:p-8 rounded-xl shadow-lg">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <h1 className="text-2xl font-bold text-slate-800 dark:text-white">{t('clientListTitle')}</h1>
-                <button
-                    onClick={onNew}
-                    className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 self-end sm:self-center"
-                >
-                    + {t('newButton')}
-                </button>
+                <div className="flex items-center gap-3 self-end sm:self-center">
+                    <button
+                        onClick={onRefresh}
+                        disabled={isRefreshing}
+                        className="flex items-center justify-center px-4 py-2 border border-slate-300 dark:border-slate-500 text-slate-700 dark:text-slate-200 font-semibold rounded-lg shadow-md hover:bg-slate-100 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 min-w-[140px]"
+                        title={isRefreshing ? t('refreshing') : t('refreshButton')}
+                    >
+                        {isRefreshing ? (
+                            <svg className="animate-spin h-5 w-5 mr-1.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        ) : (
+                            <RefreshIcon />
+                        )}
+                        <span>{isRefreshing ? t('refreshing') : t('refreshButton')}</span>
+                    </button>
+                    <button
+                        onClick={onNew}
+                        className="flex items-center justify-center px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                    >
+                        <NewPlusIcon />
+                        {t('newButton')}
+                    </button>
+                </div>
             </div>
             
             <div className="mb-6">
@@ -84,7 +117,7 @@ export const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit,
                  <p className="text-center text-slate-500 dark:text-slate-400 py-8">
                     {t('noClientsFound')}
                 </p>
-            ) : clients.length === 0 ? (
+            ) : clients.length === 0 && !isRefreshing ? (
                 <p className="text-center text-slate-500 dark:text-slate-400 py-8">
                     {t('noClients')}
                 </p>
