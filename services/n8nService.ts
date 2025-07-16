@@ -23,26 +23,43 @@ export const fetchClientsFromN8n = async (): Promise<SaleData[]> => {
         }
         
         const responseBody = await response.json();
-        let clientListRaw: any[] = [];
+        let clientListRaw: any[] | null = null;
 
-        // Intelligently find the array of clients within the response from n8n.
+        // Try to find the array of clients in various common n8n response structures.
         if (Array.isArray(responseBody)) {
+            // Case 1: The response body is the array of clients.
+            // This could be direct [ {client1}, {client2} ] or wrapped [ {json: client1}, {json: client2} ]
             clientListRaw = responseBody;
         } else if (typeof responseBody === 'object' && responseBody !== null) {
-            // Find the first property in the object that is an array.
-            const potentialArray = Object.values(responseBody).find(Array.isArray);
-            if (potentialArray) {
-                clientListRaw = potentialArray;
+            // Case 2: The response is an object, look for a property containing the array.
+            if (Array.isArray(responseBody.data)) {
+                // e.g., { "data": [...] }
+                clientListRaw = responseBody.data;
+            } else if (Array.isArray(responseBody.items)) {
+                // e.g., { "items": [...] }
+                clientListRaw = responseBody.items;
+            } else if (Array.isArray(responseBody.results)) {
+                // e.g., { "results": [...] }
+                clientListRaw = responseBody.results;
+            } else {
+                // Fallback: find the first property that is an array.
+                const potentialArray = Object.values(responseBody).find(val => Array.isArray(val));
+                if (potentialArray && Array.isArray(potentialArray)) {
+                    clientListRaw = potentialArray;
+                }
             }
         }
-        
-        // Handle a common n8n pattern where each item is wrapped, e.g., [{json: {...}}]
-        if (clientListRaw.length > 0 && clientListRaw[0] && clientListRaw[0].json) {
-           clientListRaw = clientListRaw.map((item: any) => item.json);
+
+        // If no array was found, warn and return empty.
+        if (!Array.isArray(clientListRaw)) {
+            console.warn("Could not find a client array in the response from n8n. Response body:", responseBody);
+            return [];
         }
 
-        if (clientListRaw.length === 0 && (typeof responseBody === 'object' && responseBody !== null)) {
-             console.warn("Could not find a client array in the response from n8n:", responseBody);
+        // n8n often wraps each item's data in a `json` property.
+        // We check the first item to see if this unwrapping is needed.
+        if (clientListRaw.length > 0 && clientListRaw[0] && typeof clientListRaw[0] === 'object' && clientListRaw[0].json) {
+           clientListRaw = clientListRaw.map((item: any) => item.json);
         }
 
         // Map the raw data from Google Sheets/n8n to the app's SaleData structure.
@@ -110,12 +127,12 @@ export const fetchClientsFromN8n = async (): Promise<SaleData[]> => {
 
 /**
  * Sends the complete form data, including files, to the primary n8n webhook.
- * This function constructs a `multipart/form-data` payload. It intelligently sends
- * either the file object (for new uploads) or the filename string (for existing files),
- * but not both for the same field, to prevent server-side ambiguity that could cause hangs.
+ * This function constructs a `multipart/form-data` payload where each piece of data
+ * is a separate part, and each file is a separate binary part. This is a common
+ * format that is easily parsable by services like n8n.
  *
  * @param {SaleData} data - The client and sale data object, including ID for edits.
- * @param {{ [key: string]: File }} files - A map of field names to File objects for new uploads.
+ * @param {{ [key: string]: File }} files - A map of field names to File objects.
  * @returns {Promise<boolean>} - True for success, false for failure.
  */
 export const sendFormDataToN8n = async (
@@ -126,39 +143,29 @@ export const sendFormDataToN8n = async (
 
     if (!N8N_FORM_URL) {
         console.warn("VITE_N8N_FORM_WORKFLOW_URL not set. Skipping form submission to n8n.");
-        return true;
+        return true; // Don't block the process if this one isn't configured
     }
 
     const formData = new FormData();
 
-    // Append all text-based data fields from the 'data' object.
     Object.entries(data).forEach(([key, value]) => {
-        // The client ID is sent as 'row_number' later, so we skip it here to avoid duplication
-        // and potential confusion in the n8n workflow.
-        if (key === 'id') {
-            return;
+        if (!Object.prototype.hasOwnProperty.call(files, key)) {
+            if (value === null || value === undefined) {
+                formData.append(key, '');
+            } else {
+                formData.append(key, String(value));
+            }
         }
+    });
 
-        // If a new file is being uploaded for this key, we skip appending the text version 
-        // of its filename. The file (with its name) will be appended in the next loop.
+    for (const key in files) {
         if (files[key]) {
-            return;
+            formData.append(key, files[key], files[key].name);
         }
-        
-        // Append the text value, ensuring null/undefined becomes an empty string.
-        if (value === null || value === undefined) {
-            formData.append(key, '');
-        } else {
-            formData.append(key, String(value));
-        }
-    });
-
-    // Append the actual file data for any new files.
-    Object.entries(files).forEach(([key, file]) => {
-        formData.append(key, file, file.name);
-    });
+    }
     
-    // For updates, send the 'row_number' so the n8n workflow knows which record to modify.
+    // For updates, send the row_number so the n8n workflow knows which record to modify.
+    // The client ID is the row_number from the Google Sheet.
     if (data.id && !data.id.startsWith('temp_')) {
         formData.append('row_number', data.id);
     }
