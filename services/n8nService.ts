@@ -134,12 +134,12 @@ export const fetchClientsFromN8n = async (): Promise<SaleData[]> => {
 
 /**
  * Sends the complete form data, including files, to the primary n8n webhook.
- * This function constructs a `multipart/form-data` payload where each piece of data
- * is a separate part, and each file is a separate binary part. This is a common
- * format that is easily parsable by services like n8n.
+ * This function constructs a `multipart/form-data` payload. It's carefully
+ * constructed to preserve existing file names during an edit, while uploading
+ * new files.
  *
  * @param {SaleData} data - The client and sale data object, including ID for edits.
- * @param {{ [key: string]: File }} files - A map of field names to File objects.
+ * @param {{ [key: string]: File }} files - A map of field names to newly uploaded File objects.
  * @returns {Promise<boolean>} - True for success, false for failure.
  */
 export const sendFormDataToN8n = async (
@@ -150,31 +150,34 @@ export const sendFormDataToN8n = async (
 
     if (!N8N_FORM_URL) {
         console.warn("VITE_N8N_FORM_WORKFLOW_URL not set. Skipping form submission to n8n.");
-        return true; // Don't block the process if this one isn't configured
+        return true; 
     }
 
     const formData = new FormData();
 
+    // 1. Append all data from the form state as string values.
+    // This includes existing filenames and the filenames of new files.
     Object.entries(data).forEach(([key, value]) => {
-        if (!Object.prototype.hasOwnProperty.call(files, key)) {
-            if (value === null || value === undefined) {
-                formData.append(key, '');
-            } else {
-                formData.append(key, String(value));
-            }
+         if (value === null || value === undefined) {
+            formData.append(key, '');
+        } else {
+            formData.append(key, String(value));
         }
     });
-
-    for (const key in files) {
-        if (files[key]) {
-            formData.append(key, files[key], files[key].name);
+    
+    // 2. For each newly uploaded file, overwrite the string value in FormData
+    // with the actual file object. This ensures that for a given field (e.g., 'photoStoreFileName'),
+    // we send EITHER the old filename (if unchanged) OR the new file object, but never both.
+    Object.entries(files).forEach(([key, file]) => {
+        if(file) {
+            formData.set(key, file, file.name);
         }
-    }
+    });
     
     // For updates, send the row_number so the n8n workflow knows which record to modify.
     // The client ID is the row_number from the Google Sheet.
     if (data.id && !data.id.startsWith('temp_')) {
-        formData.append('row_number', data.id);
+        formData.set('row_number', data.id);
     }
 
     try {
