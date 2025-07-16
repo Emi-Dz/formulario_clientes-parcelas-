@@ -98,16 +98,16 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
         const { name, files } = e.target;
         if (files && files.length > 0) {
             const file = files[0];
-            setFileObjects(prev => ({ ...prev, [name]: file }));
-            setFormData(prev => ({ ...prev, [name]: file.name }));
-        } else {
-            // Handle file removal
-            setFileObjects(prev => {
-                const newFiles = { ...prev };
-                delete newFiles[name];
-                return newFiles;
-            });
-            setFormData(prev => ({ ...prev, [name]: '' }));
+            const updatedFileObjects = { ...fileObjects, [name]: file };
+            setFileObjects(updatedFileObjects);
+
+            // Update formData to reflect the new file name immediately
+            const updatedFormData = { ...formData, [name]: file.name };
+            
+            // Create a new object for files to send to n8n
+            const filesToSubmit = { ...fileObjects, [name]: file };
+
+            setFormData(updatedFormData);
         }
     };
     
@@ -115,17 +115,43 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
         e.preventDefault();
         onSubmit(formData, fileObjects);
     }
+    
+    // --- New File Upload Button UI ---
+    
+    const hasFile = (name: keyof SaleData): boolean => {
+        const fileName = (formData[name] as string) || '';
+        return fileName.trim() !== '';
+    };
+    
+    const FileUploadDisplay = ({ isPresent, text }: { isPresent: boolean, text: string }) => (
+        <>
+            {isPresent && (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+            )}
+            <span className="truncate">{text}</span>
+        </>
+    );
+
+    const getButtonClass = (isPresent: boolean) => {
+        return `relative w-full border-2 border-dashed rounded-lg transition-colors font-semibold flex items-center justify-center 
+        ${isPresent
+            ? 'bg-emerald-50 dark:bg-emerald-900/50 border-emerald-500 text-emerald-700 dark:text-emerald-300'
+            : 'border-slate-400 dark:border-slate-500 text-slate-500 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-500'
+        }`;
+    }
 
     const twoSidedUpload = (titleKey: string, frontName: keyof SaleData, backName: keyof SaleData) => (
          <div className="relative p-3 border-2 border-slate-300 dark:border-slate-600 rounded-lg flex flex-col">
             <span className="block text-sm font-medium text-center text-slate-700 dark:text-slate-300 mb-2">{t(titleKey)}</span>
             <div className="grid grid-cols-2 gap-2 mt-auto">
-                <button type="button" className="relative w-full p-2 border-2 border-dashed border-slate-400 dark:border-slate-500 rounded-lg text-slate-500 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-500 transition-colors">
-                    {t('frente')} {((formData[frontName] as string) || '').trim() && '✓'}
+                <button type="button" className={`${getButtonClass(hasFile(frontName))} p-2 text-sm`}>
+                    <FileUploadDisplay isPresent={hasFile(frontName)} text={t('frente')} />
                     <input type="file" name={frontName} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} />
                 </button>
-                 <button type="button" className="relative w-full p-2 border-2 border-dashed border-slate-400 dark:border-slate-500 rounded-lg text-slate-500 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-500 transition-colors">
-                    {t('verso')} {((formData[backName] as string) || '').trim() && '✓'}
+                 <button type="button" className={`${getButtonClass(hasFile(backName))} p-2 text-sm`}>
+                    <FileUploadDisplay isPresent={hasFile(backName)} text={t('verso')} />
                     <input type="file" name={backName} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} />
                 </button>
             </div>
@@ -133,18 +159,19 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
     );
     
     const singleUploadButton = (titleKey: string, name: keyof SaleData) => (
-         <button type="button" className="relative w-full p-3 border-2 border-dashed border-slate-400 dark:border-slate-500 rounded-lg text-slate-500 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-500 transition-colors">
-            {t(titleKey)} {((formData[name] as string) || '').trim() && '✓'}
+         <button type="button" className={`${getButtonClass(hasFile(name))} p-3 text-sm`}>
+            <FileUploadDisplay isPresent={hasFile(name)} text={t(titleKey)} />
             <input type="file" name={name} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} />
         </button>
     );
     
     const fileUploadButton = (label: string, name: keyof SaleData) => (
-        <button type="button" className="relative w-full p-2 border-2 border-dashed border-slate-400 dark:border-slate-500 rounded-lg text-slate-500 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-500 transition-colors">
-            {label} {((formData[name] as string) || '').trim() && '✓'}
+        <button type="button" className={`${getButtonClass(hasFile(name))} p-2 text-xs`}>
+            <FileUploadDisplay isPresent={hasFile(name)} text={label} />
             <input type="file" name={name} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} />
         </button>
     );
+
 
     return (
         <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-800 p-4 md:p-6 rounded-xl shadow-lg space-y-6">
@@ -196,9 +223,6 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
                 <Input label={t('reference1Relationship')} id="reference1Relationship" name="reference1Relationship" value={formData.reference1Relationship} onChange={handleChange} placeholder={t('placeholder_refRelationship')} />
                 <Input label={t('reference2Name')} id="reference2Name" name="reference2Name" value={formData.reference2Name} onChange={handleChange} placeholder={t('placeholder_refName')} />
                 <Input label={t('reference2Relationship')} id="reference2Relationship" name="reference2Relationship" value={formData.reference2Relationship} onChange={handleChange} placeholder={t('placeholder_refRelationship')} />
-                <div className="md:col-span-2">
-                    {singleUploadButton('instagramFace', 'photoInstagramFileName')}
-                </div>
             </Fieldset>
             
             <Fieldset legend={t('photos')}>
@@ -206,6 +230,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
                     {singleUploadButton('fotoLoja', 'photoStoreFileName')}
                     {singleUploadButton('fotoCasa', 'photoHomeFileName')}
                     {singleUploadButton('fotoCodigoTelefono', 'photoPhoneCodeFileName')}
+                    {singleUploadButton('instagramFace', 'photoInstagramFileName')}
                     {twoSidedUpload('fotoContrato', 'photoContractFrontFileName', 'photoContractBackFileName')}
                     <div className="relative p-3 border-2 border-slate-300 dark:border-slate-600 rounded-lg flex flex-col">
                         <span className="block text-sm font-medium text-center text-slate-700 dark:text-slate-300 mb-2">{t('fotoDocumentos')}</span>
