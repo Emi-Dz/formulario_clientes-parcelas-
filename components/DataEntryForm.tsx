@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { SaleData, PaymentSystem, Language, ClientType } from '../types';
 import { PAYMENT_OPTIONS, CLIENT_TYPE_OPTIONS } from '../constants';
@@ -39,6 +40,14 @@ const Fieldset: React.FC<{ legend: string; children: React.ReactNode }> = ({ leg
         </div>
     </fieldset>
 );
+
+// --- SVG Icon for Uploaded State ---
+const CheckCircleIcon: React.FC = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+    </svg>
+);
+
 
 // --- Main Form Component ---
 
@@ -120,34 +129,48 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
         onSubmit(formData, fileObjects);
     }
 
+    // --- Reusable Upload Button Components ---
+
+    const singleUploadButton = (titleKey: string, name: keyof SaleData) => {
+        const isUploaded = !!formData[name];
+        const buttonClasses = `relative flex items-center justify-center w-full p-3 border-2 rounded-lg transition-colors text-sm font-medium h-full
+            ${isUploaded
+                ? 'border-solid border-green-500 text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-900/30'
+                : 'border-dashed border-slate-400 dark:border-slate-500 text-slate-500 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-500'
+            }`;
+        return (
+            <button type="button" className={buttonClasses}>
+                <span className="text-center">{t(titleKey)}</span>
+                {isUploaded && <CheckCircleIcon />}
+                <input type="file" name={name} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} />
+            </button>
+        );
+    };
+
+    const FilePartButton = ({ label, name }: { label: string; name: keyof SaleData }) => {
+        const isUploaded = !!formData[name];
+        const buttonClasses = `relative flex items-center justify-center w-full p-2 border-2 rounded-lg transition-colors text-xs font-medium
+            ${isUploaded
+                ? 'border-solid border-green-500 text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-900/30'
+                : 'border-dashed border-slate-400 dark:border-slate-500 text-slate-500 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-500'
+            }`;
+        return (
+            <button type="button" className={buttonClasses}>
+                <span className="truncate">{label}</span>
+                {isUploaded && <CheckCircleIcon />}
+                <input type="file" name={name} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} />
+            </button>
+        );
+    };
+
     const twoSidedUpload = (titleKey: string, frontName: keyof SaleData, backName: keyof SaleData) => (
-         <div className="relative p-3 border-2 border-slate-300 dark:border-slate-600 rounded-lg flex flex-col">
+         <div className="relative p-3 border border-slate-300 dark:border-slate-600 rounded-lg flex flex-col h-full">
             <span className="block text-sm font-medium text-center text-slate-700 dark:text-slate-300 mb-2">{t(titleKey)}</span>
             <div className="grid grid-cols-2 gap-2 mt-auto">
-                <button type="button" className="relative w-full p-2 border-2 border-dashed border-slate-400 dark:border-slate-500 rounded-lg text-slate-500 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-500 transition-colors">
-                    {t('frente')} {(formData[frontName] as string) && '✓'}
-                    <input type="file" name={frontName} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} />
-                </button>
-                 <button type="button" className="relative w-full p-2 border-2 border-dashed border-slate-400 dark:border-slate-500 rounded-lg text-slate-500 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-500 transition-colors">
-                    {t('verso')} {(formData[backName] as string) && '✓'}
-                    <input type="file" name={backName} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} />
-                </button>
+                <FilePartButton label={t('frente')} name={frontName} />
+                <FilePartButton label={t('verso')} name={backName} />
             </div>
         </div>
-    );
-    
-    const singleUploadButton = (titleKey: string, name: keyof SaleData) => (
-         <button type="button" className="relative w-full p-3 border-2 border-dashed border-slate-400 dark:border-slate-500 rounded-lg text-slate-500 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-500 transition-colors">
-            {t(titleKey)} {(formData[name] as string) && '✓'}
-            <input type="file" name={name} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} />
-        </button>
-    );
-    
-    const fileUploadButton = (label: string, name: keyof SaleData) => (
-        <button type="button" className="relative w-full p-2 border-2 border-dashed border-slate-400 dark:border-slate-500 rounded-lg text-slate-500 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-500 transition-colors">
-            {label} {(formData[name] as string) && '✓'}
-            <input type="file" name={name} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} />
-        </button>
     );
 
     return (
@@ -200,9 +223,6 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
                 <Input label={t('reference1Relationship')} id="reference1Relationship" name="reference1Relationship" value={formData.reference1Relationship} onChange={handleChange} placeholder={t('placeholder_refRelationship')} />
                 <Input label={t('reference2Name')} id="reference2Name" name="reference2Name" value={formData.reference2Name} onChange={handleChange} placeholder={t('placeholder_refName')} />
                 <Input label={t('reference2Relationship')} id="reference2Relationship" name="reference2Relationship" value={formData.reference2Relationship} onChange={handleChange} placeholder={t('placeholder_refRelationship')} />
-                <div className="md:col-span-2">
-                    {singleUploadButton('instagramFace', 'photoInstagramFileName')}
-                </div>
             </Fieldset>
             
             <Fieldset legend={t('photos')}>
@@ -210,13 +230,14 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
                     {singleUploadButton('fotoLoja', 'photoStoreFileName')}
                     {singleUploadButton('fotoCasa', 'photoHomeFileName')}
                     {singleUploadButton('fotoCodigoTelefono', 'photoPhoneCodeFileName')}
+                    {singleUploadButton('instagramFace', 'photoInstagramFileName')}
                     {twoSidedUpload('fotoContrato', 'photoContractFrontFileName', 'photoContractBackFileName')}
-                    <div className="relative p-3 border-2 border-slate-300 dark:border-slate-600 rounded-lg flex flex-col">
+                    <div className="relative p-3 border border-slate-300 dark:border-slate-600 rounded-lg flex flex-col h-full">
                         <span className="block text-sm font-medium text-center text-slate-700 dark:text-slate-300 mb-2">{t('fotoDocumentos')}</span>
                         <div className="grid grid-cols-3 gap-2 mt-auto">
-                            {fileUploadButton(t('frente'), 'photoIdFrontFileName')}
-                            {fileUploadButton(t('verso'), 'photoIdBackFileName')}
-                            {fileUploadButton(t('cpfPhoto'), 'photoCpfFileName')}
+                            <FilePartButton label={t('frente')} name={'photoIdFrontFileName'} />
+                            <FilePartButton label={t('verso')} name={'photoIdBackFileName'} />
+                            <FilePartButton label={t('cpfPhoto')} name={'photoCpfFileName'} />
                         </div>
                     </div>
                 </div>
@@ -250,7 +271,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
                             <span>{loadingMessage || t('loading')}</span>
                         </>
                     ) : (
-                        isEditMode ? t('saveChanges') : t('submitAndGenerate')
+                        isEditMode ? t('saveChanges') : t('submitNewClient')
                     )}
                 </button>
             </div>
