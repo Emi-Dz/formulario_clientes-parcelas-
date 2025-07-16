@@ -7,6 +7,7 @@ interface ClientListPageProps {
     clients: SaleData[];
     onEdit: (id: string) => void;
     onNew: () => void;
+    onDelete: (id: string, name: string) => void;
 }
 
 const EditIcon = () => (
@@ -15,7 +16,13 @@ const EditIcon = () => (
     </svg>
 );
 
-export const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit, onNew }) => {
+const DeleteIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+    </svg>
+);
+
+export const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit, onNew, onDelete }) => {
     const { t } = useLanguage();
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -76,7 +83,7 @@ export const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit,
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">{t('colTotal')}</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">{t('colPaymentSystem')}</th>
                                 <th scope="col" className="relative px-6 py-3">
-                                    <span className="sr-only">{t('colEdit')}</span>
+                                    <span className="sr-only">{t('actions')}</span>
                                 </th>
                             </tr>
                         </thead>
@@ -98,10 +105,14 @@ export const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit,
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
                                         {t(client.paymentSystem?.toLowerCase() ?? '')}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                                         <button onClick={() => onEdit(client.id)} className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-indigo-900/50 dark:text-indigo-300 dark:hover:bg-indigo-900">
                                             <EditIcon />
                                             {t('editButton')}
+                                        </button>
+                                        <button onClick={() => onDelete(client.id, client.clientFullName)} className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900">
+                                            <DeleteIcon />
+                                            {t('deleteButton')}
                                         </button>
                                     </td>
                                 </tr>
