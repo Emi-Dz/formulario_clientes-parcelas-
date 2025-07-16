@@ -13,7 +13,7 @@ import { generateExcel } from './services/excelGenerator';
 
 type View = 'home' | 'list' | 'form';
 
-const CORRECT_PASSWORD = 'vendas2024';
+const CORRECT_PASSWORD = 'Lilo0608';
 const AUTH_KEY = 'client-app-auth';
 
 const App: React.FC = () => {
@@ -121,23 +121,9 @@ const App: React.FC = () => {
                     ? t('successUpdate', { clientName: formData.clientFullName })
                     : t('successNew');
                 showSuccess(successMsg);
-                
-                // --- OPTIMISTIC UI UPDATE ---
-                // Immediately update the local state to reflect saved changes, especially
-                // for edits. This makes the UI feel instant and solves sync issues.
-                if (finalData.id) {
-                    const updatedClients = clients.map(c => 
-                        c.id === finalData.id ? finalData : c
-                    );
-                    setClients(updatedClients);
-                    clientStore.setClients(updatedClients);
-                }
-
                 // Go to list only if authenticated, otherwise go home
                 if (isAuthenticated) {
                     setView('list');
-                    // A full refetch is still done to ensure consistency with the backend,
-                    // but the user experience is improved by the optimistic update.
                     fetchClients();
                 } else {
                     setView('home');
@@ -154,7 +140,7 @@ const App: React.FC = () => {
             setIsLoading(false);
             setLoadingMessage(null);
         }
-    }, [t, isAuthenticated, fetchClients, clients]);
+    }, [t, isAuthenticated, fetchClients]);
 
     const handleLogin = (password: string): boolean => {
         if (password === CORRECT_PASSWORD) {
@@ -240,7 +226,7 @@ const App: React.FC = () => {
 
 
     const renderView = () => {
-        if (isFetchingClients && view === 'list') {
+        if (isFetchingClients && view === 'list' && clients.length === 0) {
             return <div className="text-center p-10">{t('loading_clients')}</div>
         }
         
@@ -254,6 +240,8 @@ const App: React.FC = () => {
                     onDelete={handleRequestDelete}
                     onGenerateSummary={handleGenerateSummary}
                     generatingSummaryId={isGeneratingSummaryId}
+                    onRefresh={fetchClients}
+                    isRefreshing={isFetchingClients}
                 />;
             case 'form':
                 return (
