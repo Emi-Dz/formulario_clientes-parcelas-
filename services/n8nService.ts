@@ -146,6 +146,12 @@ export const sendFormDataToN8n = async (
             formData.append(key, files[key], files[key].name);
         }
     }
+    
+    // For updates, send the row_number so the n8n workflow knows which record to modify.
+    // The client ID is the row_number from the Google Sheet.
+    if (data.id && !data.id.startsWith('temp_')) {
+        formData.append('row_number', data.id);
+    }
 
     try {
         const response = await fetch(N8N_FORM_URL, {
@@ -185,13 +191,21 @@ export const sendReportDataToN8n = async (data: SaleData): Promise<boolean> => {
         return true; // Don't block the process if this one isn't configured
     }
     
+    // Create a mutable copy to avoid changing the original object.
+    const reportData: any = { ...data };
+
+    // For updates, send the row_number so the n8n workflow knows which record to modify.
+    if (reportData.id && !reportData.id.startsWith('temp_')) {
+        reportData.row_number = reportData.id;
+    }
+
     try {
         const response = await fetch(N8N_REPORT_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(data),
+            body: JSON.stringify(reportData),
         });
 
         if (!response.ok) {
@@ -204,6 +218,48 @@ export const sendReportDataToN8n = async (data: SaleData): Promise<boolean> => {
 
     } catch (error) {
         console.error("Error sending report data to n8n:", error);
+        return false;
+    }
+};
+
+/**
+ * Sends a request to an n8n webhook to delete a client.
+ *
+ * @param {string} clientId - The ID of the client to delete (corresponds to the row_number).
+ * @returns {Promise<boolean>} - True for success, false for failure.
+ */
+export const deleteClientInN8n = async (clientId: string): Promise<boolean> => {
+    const DELETE_URL = import.meta.env.VITE_N8N_DELETE_CLIENT_URL;
+    if (!DELETE_URL) {
+        console.warn("VITE_N8N_DELETE_CLIENT_URL is not defined. Cannot delete client.");
+        return false;
+    }
+
+    try {
+        // The payload sent to n8n for deletion. It identifies the client by their row_number.
+        const payload = {
+            row_number: clientId
+        };
+
+        const response = await fetch(DELETE_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            console.error(`n8n delete workflow returned an error: ${response.status} ${response.statusText}. Response: ${errorBody}`);
+            return false;
+        }
+
+        console.log(`Client ${clientId} successfully deleted via n8n.`);
+        return true;
+
+    } catch (error) {
+        console.error("Error sending delete request to n8n:", error);
         return false;
     }
 };

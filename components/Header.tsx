@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { useLanguage } from '../context/LanguageContext';
@@ -14,11 +15,20 @@ const HomeIcon = () => (
     </svg>
 );
 
+const LogoutIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+    </svg>
+);
+
+
 interface HeaderProps {
     onGoHome: () => void;
+    onLogout: () => void;
+    isAuthenticated: boolean;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onGoHome }) => {
+export const Header: React.FC<HeaderProps> = ({ onGoHome, onLogout, isAuthenticated }) => {
     const { t } = useLanguage();
     return (
         <header className="bg-gradient-to-r from-slate-800 to-slate-900 shadow-lg">
@@ -29,15 +39,24 @@ export const Header: React.FC<HeaderProps> = ({ onGoHome }) => {
                         {t('appTitle')}
                     </h1>
                 </div>
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2 sm:space-x-4">
                      <LanguageSwitcher />
                      <button
                         onClick={onGoHome}
                         className="p-2 rounded-full text-white hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-white"
-                        aria-label="Go to homepage"
+                        aria-label={t('home_viewClients')}
                     >
                         <HomeIcon />
                     </button>
+                    {isAuthenticated && (
+                        <button
+                            onClick={onLogout}
+                            className="p-2 rounded-full text-white hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-white"
+                            aria-label={t('logout')}
+                        >
+                            <LogoutIcon />
+                        </button>
+                    )}
                 </div>
             </div>
         </header>

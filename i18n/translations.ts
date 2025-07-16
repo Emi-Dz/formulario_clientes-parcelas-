@@ -1,11 +1,18 @@
-export const translations: { [key: string]: { [key: string]: string } } = {
+export const translations: { [key: string]: { [key:string]: string } } = {
     es: {
         // Header
         appTitle: 'Gestión de Clientes',
+        logout: 'Salir',
 
         // Language Switcher
         es: 'ES',
         pt: 'PT',
+
+        // Login Page
+        loginTitle: 'Acceso Restringido',
+        passwordLabel: 'Contraseña',
+        loginButton: 'Ingresar',
+        loginError: 'Contraseña incorrecta. Por favor, intente de nuevo.',
 
         // Home Page
         welcome: 'Bienvenido',
@@ -17,16 +24,24 @@ export const translations: { [key: string]: { [key: string]: string } } = {
         clientListTitle: 'Lista de Clientes',
         newButton: 'Cargar Nuevo',
         noClients: 'No hay clientes cargados todavía.',
+        noClientsFound: 'No se encontraron clientes.',
+        searchPlaceholderCpf: 'Buscar por CPF...',
         colClient: 'Cliente',
         colProduct: 'Producto',
         colTotal: 'Total',
-        colPurchaseDate: 'Fecha Compra',
         colEdit: 'Editar',
+        colDelete: 'Borrar',
+        actions: 'Acciones',
         editButton: 'Editar',
+        deleteButton: 'Borrar',
         colCpf: 'CPF',
-        colPhone: 'Teléfono',
-        colPaymentSystem: 'Sistema Pago',
+        colPaymentSystem: 'Modo de Pago',
 
+        // Delete Confirmation
+        deleteConfirmTitle: '¿Estás seguro?',
+        deleteConfirmText: 'Esta acción no se puede deshacer. Se eliminará permanentemente al cliente {{clientName}}.',
+        deleteConfirmButton: 'Sí, Borrar Cliente',
+        
         // Form Page Titles
         formTitleNew: 'Cargar Nuevo Cliente',
         formTitleEdit: 'Editar Cliente',
@@ -109,6 +124,7 @@ export const translations: { [key: string]: { [key: string]: string } } = {
         // App Level Messages
         successUpdate: 'Cliente {{clientName}} actualizado exitosamente!',
         successNew: 'Nuevo cliente cargado exitosamente!',
+        successDelete: 'Cliente {{clientName}} borrado exitosamente.',
         errorPrefix: 'Error',
         errorUnknown: 'Ocurrió un error desconocido.',
         error_n8n_form: 'Error al enviar los datos del formulario.',
@@ -116,14 +132,22 @@ export const translations: { [key: string]: { [key: string]: string } } = {
         error_n8n_all_failed: 'Fallaron todos los envíos. Por favor, intente de nuevo.',
         errorFetchClients: 'Error al cargar los clientes',
         errorClientExists: 'El cliente con este CPF ya existe.',
+        errorDelete: 'Error al borrar el cliente {{clientName}}.',
     },
     pt: {
         // Header
         appTitle: 'Gerenciamento de Clientes',
+        logout: 'Sair',
 
         // Language Switcher
         es: 'ES',
         pt: 'PT',
+
+        // Login Page
+        loginTitle: 'Acesso Restrito',
+        passwordLabel: 'Senha',
+        loginButton: 'Entrar',
+        loginError: 'Senha incorreta. Por favor, tente novamente.',
 
         // Home Page
         welcome: 'Bem-vindo',
@@ -135,15 +159,23 @@ export const translations: { [key: string]: { [key: string]: string } } = {
         clientListTitle: 'Lista de Clientes',
         newButton: 'Carregar Novo',
         noClients: 'Nenhum cliente carregado ainda.',
+        noClientsFound: 'Nenhum cliente encontrado.',
+        searchPlaceholderCpf: 'Buscar por CPF...',
         colClient: 'Cliente',
         colProduct: 'Produto',
         colTotal: 'Total',
-        colPurchaseDate: 'Data da Compra',
         colEdit: 'Editar',
+        colDelete: 'Excluir',
+        actions: 'Ações',
         editButton: 'Editar',
+        deleteButton: 'Excluir',
         colCpf: 'CPF',
-        colPhone: 'Telefone',
-        colPaymentSystem: 'Sistema Pagto.',
+        colPaymentSystem: 'Forma de Pagamento',
+
+        // Delete Confirmation
+        deleteConfirmTitle: 'Você tem certeza?',
+        deleteConfirmText: 'Esta ação não pode ser desfeita. O cliente {{clientName}} será excluído permanentemente.',
+        deleteConfirmButton: 'Sim, Excluir Cliente',
         
         // Form Page Titles
         formTitleNew: 'Carregar Novo Cliente',
@@ -226,6 +258,7 @@ export const translations: { [key: string]: { [key: string]: string } } = {
         // App Level Messages
         successUpdate: 'Cliente {{clientName}} atualizado com sucesso!',
         successNew: 'Novo cliente carregado com sucesso!',
+        successDelete: 'Cliente {{clientName}} excluído com sucesso.',
         errorPrefix: 'Erro',
         errorUnknown: 'Ocorreu um erro desconhecido.',
         error_n8n_form: 'Erro ao enviar os dados do formulário.',
@@ -233,5 +266,6 @@ export const translations: { [key: string]: { [key: string]: string } } = {
         error_n8n_all_failed: 'Todas as submissões falharam. Por favor, tente novamente.',
         errorFetchClients: 'Erro ao carregar os clientes',
         errorClientExists: 'O cliente com este CPF já existe.',
+        errorDelete: 'Erro ao excluir o cliente {{clientName}}.',
     },
 };

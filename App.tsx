@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { Header } from './components/Header';
 import { SaleData } from './types';
@@ -7,19 +8,29 @@ import { HomePage } from './pages/HomePage';
 import { ClientListPage } from './pages/ClientListPage';
 import { ClientFormPage } from './pages/ClientFormPage';
 import { useLanguage } from './context/LanguageContext';
+import { LoginPage } from './pages/LoginPage';
 
 type View = 'home' | 'list' | 'form';
 
+const CORRECT_PASSWORD = 'vendas2024';
+const AUTH_KEY = 'client-app-auth';
+
 const App: React.FC = () => {
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => sessionStorage.getItem(AUTH_KEY) === 'true');
+    const [isLoginVisible, setIsLoginVisible] = useState<boolean>(false);
     const [view, setView] = useState<View>('home');
     const [clients, setClients] = useState<SaleData[]>([]);
-    const [isFetchingClients, setIsFetchingClients] = useState<boolean>(true);
+    const [isFetchingClients, setIsFetchingClients] = useState<boolean>(false);
     const [editingClientId, setEditingClientId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [loadingMessage, setLoadingMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const { t } = useLanguage();
+
+    // --- Delete State ---
+    const [clientToDelete, setClientToDelete] = useState<{ id: string; name: string } | null>(null);
+    const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
     const fetchClients = useCallback(async () => {
         setIsFetchingClients(true);
@@ -30,26 +41,32 @@ const App: React.FC = () => {
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : t('errorUnknown');
             showError(`${t('errorFetchClients')}: ${errorMessage}`);
-            setClients([]); 
+            setClients([]);
             clientStore.setClients([]);
         } finally {
             setIsFetchingClients(false);
         }
     }, [t]);
-
-    useEffect(() => {
-        fetchClients();
-    }, [fetchClients]);
     
-    const handleGoHome = () => setView('home');
-    const handleGoToList = () => {
-        fetchClients();
-        setView('list');
+    const handleGoHome = () => {
+        setView('home');
+        setIsLoginVisible(false); // Hide login page if user navigates home
     };
+
+    const handleGoToList = () => {
+        if (isAuthenticated) {
+            setView('list');
+            fetchClients();
+        } else {
+            setIsLoginVisible(true);
+        }
+    };
+    
     const handleGoToNewForm = () => {
         setEditingClientId(null);
         setView('form');
     };
+
     const handleGoToEditForm = (id: string) => {
         setEditingClientId(id);
         setView('form');
@@ -70,13 +87,15 @@ const App: React.FC = () => {
         setError(null);
         setSuccessMessage(null);
         
-        // For new clients, check if CPF already exists using a robust, normalized comparison.
         if (!formData.id && formData.clientCpf) {
             const normalizeCpf = (cpf: string) => (cpf || '').replace(/\D/g, '');
             const newClientCpf = normalizeCpf(formData.clientCpf);
 
-            if (newClientCpf) { // Only check if CPF is not empty
-                const clientExists = clients.some(client => normalizeCpf(client.clientCpf) === newClientCpf);
+            // Fetch the latest client list before checking for duplicates
+            const currentClients = await n8nService.fetchClientsFromN8n();
+
+            if (newClientCpf) {
+                const clientExists = currentClients.some(client => normalizeCpf(client.clientCpf) === newClientCpf);
                 if (clientExists) {
                     showError(t('errorClientExists'));
                     setIsLoading(false);
@@ -96,23 +115,24 @@ const App: React.FC = () => {
 
             setLoadingMessage(t('loading_n8n_form'));
             formSuccess = await n8nService.sendFormDataToN8n(finalData, fileObjects);
-            if (!formSuccess) {
-                showError(t('error_n8n_form'));
-            }
-
+            if (!formSuccess) showError(t('error_n8n_form'));
+            
             setLoadingMessage(t('loading_n8n_report'));
             reportSuccess = await n8nService.sendReportDataToN8n(finalData);
-            if (!reportSuccess) {
-                showError(t('error_n8n_report'));
-            }
+            if (!reportSuccess) showError(t('error_n8n_report'));
 
             if (formSuccess || reportSuccess) {
                  const successMsg = formData.id 
                     ? t('successUpdate', { clientName: formData.clientFullName })
                     : t('successNew');
                 showSuccess(successMsg);
-                setView('list');
-                fetchClients(); 
+                // Go to list only if authenticated, otherwise go home
+                if (isAuthenticated) {
+                    setView('list');
+                    fetchClients();
+                } else {
+                    setView('home');
+                }
             } else {
                  showError(t('error_n8n_all_failed'));
             }
@@ -125,22 +145,83 @@ const App: React.FC = () => {
             setIsLoading(false);
             setLoadingMessage(null);
         }
-    }, [t, fetchClients, clients]);
+    }, [t, isAuthenticated, fetchClients]);
+
+    const handleLogin = (password: string): boolean => {
+        if (password === CORRECT_PASSWORD) {
+            setIsAuthenticated(true);
+            sessionStorage.setItem(AUTH_KEY, 'true');
+            setIsLoginVisible(false);
+            setView('list'); // Go to list after successful login
+            fetchClients();
+            return true;
+        }
+        return false;
+    };
+
+    const handleLogout = () => {
+        setIsAuthenticated(false);
+        sessionStorage.removeItem(AUTH_KEY);
+        setView('home');
+    };
+    
+    const handleCancelLogin = () => {
+        setIsLoginVisible(false);
+    };
+
+    // --- Delete Handlers ---
+    const handleRequestDelete = (id: string, name: string) => {
+        setClientToDelete({ id, name });
+    };
+
+    const handleCancelDelete = () => {
+        if (isDeleting) return;
+        setClientToDelete(null);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!clientToDelete) return;
+
+        setIsDeleting(true);
+        setError(null);
+        setSuccessMessage(null);
+
+        try {
+            const success = await n8nService.deleteClientInN8n(clientToDelete.id);
+            if (success) {
+                // Remove client from local state to update UI immediately
+                const updatedClients = clients.filter(c => c.id !== clientToDelete.id)
+                setClients(updatedClients);
+                clientStore.setClients(updatedClients);
+                showSuccess(t('successDelete', { clientName: clientToDelete.name }));
+            } else {
+                showError(t('errorDelete', { clientName: clientToDelete.name }));
+            }
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : t('errorUnknown');
+            showError(`${t('errorDelete', { clientName: clientToDelete.name })}: ${errorMessage}`);
+        } finally {
+            setIsDeleting(false);
+            setClientToDelete(null);
+        }
+    };
+
 
     const renderView = () => {
-        if (isFetchingClients && view !== 'form') {
+        if (isFetchingClients && view === 'list') {
             return <div className="text-center p-10">{t('loading_clients')}</div>
         }
         
         switch (view) {
             case 'list':
-                return <ClientListPage clients={clients} onEdit={handleGoToEditForm} onNew={handleGoToNewForm} />;
+                 // This view is protected by the handleGoToList logic
+                return <ClientListPage clients={clients} onEdit={handleGoToEditForm} onNew={handleGoToNewForm} onDelete={handleRequestDelete} />;
             case 'form':
                 return (
                     <ClientFormPage 
                         editingClientId={editingClientId}
                         onSave={handleSave}
-                        onCancel={handleGoToList}
+                        onCancel={isAuthenticated ? handleGoToList : handleGoHome}
                         isLoading={isLoading}
                         loadingMessage={loadingMessage}
                     />
@@ -153,20 +234,64 @@ const App: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-sans">
-            <Header onGoHome={handleGoHome} />
+            <Header onGoHome={handleGoHome} onLogout={handleLogout} isAuthenticated={isAuthenticated} />
             <main className="container mx-auto p-4 md:p-8">
-                {successMessage && (
-                    <div className="mb-4 p-4 bg-green-100 dark:bg-green-900 border border-green-400 dark:border-green-600 text-green-700 dark:text-green-200 rounded-lg">
-                        {successMessage}
-                    </div>
+                 {isLoginVisible ? (
+                    <LoginPage onLogin={handleLogin} onCancel={handleCancelLogin} />
+                ) : (
+                    <>
+                        {successMessage && (
+                            <div className="mb-4 p-4 bg-green-100 dark:bg-green-900 border border-green-400 dark:border-green-600 text-green-700 dark:text-green-200 rounded-lg">
+                                {successMessage}
+                            </div>
+                        )}
+                        {error && (
+                            <div className="mb-4 p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 rounded-lg">
+                                {error}
+                            </div>
+                        )}
+                        {renderView()}
+                    </>
                 )}
-                {error && (
-                    <div className="mb-4 p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 rounded-lg">
-                        {error}
-                    </div>
-                )}
-                {renderView()}
             </main>
+
+            {/* Delete Confirmation Modal */}
+            {clientToDelete && (
+                <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4" aria-modal="true" role="dialog">
+                    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-md transform transition-all">
+                        <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t('deleteConfirmTitle')}</h2>
+                        <p className="mt-2 text-slate-600 dark:text-slate-300">
+                            {t('deleteConfirmText', { clientName: clientToDelete.name })}
+                        </p>
+                        <div className="mt-6 flex justify-end space-x-4">
+                            <button 
+                                onClick={handleCancelDelete} 
+                                disabled={isDeleting}
+                                className="px-4 py-2 border border-slate-300 text-base font-medium rounded-md shadow-sm text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
+                            >
+                                {t('cancel')}
+                            </button>
+                            <button 
+                                onClick={handleConfirmDelete} 
+                                disabled={isDeleting}
+                                className="flex items-center justify-center px-4 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:bg-red-400 disabled:cursor-not-allowed"
+                            >
+                                {isDeleting ? (
+                                    <>
+                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        {t('loading')}
+                                    </>
+                                ) : (
+                                    t('deleteConfirmButton')
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
