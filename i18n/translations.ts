@@ -24,6 +24,8 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         // Client List Page
         clientListTitle: 'Lista de Clientes',
         newButton: 'Cargar Nuevo',
+        refreshButton: 'Actualizar',
+        refreshing: 'Actualizando...',
         noClients: 'No hay clientes cargados todavía.',
         noClientsFound: 'No se encontraron clientes.',
         searchPlaceholderCpf: 'Buscar por CPF...',
@@ -158,6 +160,8 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         // Client List Page
         clientListTitle: 'Lista de Clientes',
         newButton: 'Carregar Novo',
+        refreshButton: 'Atualizar',
+        refreshing: 'Atualizando...',
         noClients: 'Nenhum cliente carregado ainda.',
         noClientsFound: 'Nenhum cliente encontrado.',
         searchPlaceholderCpf: 'Buscar por CPF...',
