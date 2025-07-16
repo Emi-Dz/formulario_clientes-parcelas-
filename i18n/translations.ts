@@ -1,4 +1,3 @@
-
 export const translations: { [key: string]: { [key:string]: string } } = {
     es: {
         // Header
@@ -31,10 +30,18 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         colProduct: 'Producto',
         colTotal: 'Total',
         colEdit: 'Editar',
+        colDelete: 'Borrar',
+        actions: 'Acciones',
         editButton: 'Editar',
+        deleteButton: 'Borrar',
         colCpf: 'CPF',
         colPaymentSystem: 'Modo de Pago',
 
+        // Delete Confirmation
+        deleteConfirmTitle: '¿Estás seguro?',
+        deleteConfirmText: 'Esta acción no se puede deshacer. Se eliminará permanentemente al cliente {{clientName}}.',
+        deleteConfirmButton: 'Sí, Borrar Cliente',
+        
         // Form Page Titles
         formTitleNew: 'Cargar Nuevo Cliente',
         formTitleEdit: 'Editar Cliente',
@@ -117,6 +124,7 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         // App Level Messages
         successUpdate: 'Cliente {{clientName}} actualizado exitosamente!',
         successNew: 'Nuevo cliente cargado exitosamente!',
+        successDelete: 'Cliente {{clientName}} borrado exitosamente.',
         errorPrefix: 'Error',
         errorUnknown: 'Ocurrió un error desconocido.',
         error_n8n_form: 'Error al enviar los datos del formulario.',
@@ -124,6 +132,7 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         error_n8n_all_failed: 'Fallaron todos los envíos. Por favor, intente de nuevo.',
         errorFetchClients: 'Error al cargar los clientes',
         errorClientExists: 'El cliente con este CPF ya existe.',
+        errorDelete: 'Error al borrar el cliente {{clientName}}.',
     },
     pt: {
         // Header
@@ -156,9 +165,17 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         colProduct: 'Produto',
         colTotal: 'Total',
         colEdit: 'Editar',
+        colDelete: 'Excluir',
+        actions: 'Ações',
         editButton: 'Editar',
+        deleteButton: 'Excluir',
         colCpf: 'CPF',
         colPaymentSystem: 'Forma de Pagamento',
+
+        // Delete Confirmation
+        deleteConfirmTitle: 'Você tem certeza?',
+        deleteConfirmText: 'Esta ação não pode ser desfeita. O cliente {{clientName}} será excluído permanentemente.',
+        deleteConfirmButton: 'Sim, Excluir Cliente',
         
         // Form Page Titles
         formTitleNew: 'Carregar Novo Cliente',
@@ -241,6 +258,7 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         // App Level Messages
         successUpdate: 'Cliente {{clientName}} atualizado com sucesso!',
         successNew: 'Novo cliente carregado com sucesso!',
+        successDelete: 'Cliente {{clientName}} excluído com sucesso.',
         errorPrefix: 'Erro',
         errorUnknown: 'Ocorreu um erro desconhecido.',
         error_n8n_form: 'Erro ao enviar os dados do formulário.',
@@ -248,5 +266,6 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         error_n8n_all_failed: 'Todas as submissões falharam. Por favor, tente novamente.',
         errorFetchClients: 'Erro ao carregar os clientes',
         errorClientExists: 'O cliente com este CPF já existe.',
+        errorDelete: 'Erro ao excluir o cliente {{clientName}}.',
     },
 };
