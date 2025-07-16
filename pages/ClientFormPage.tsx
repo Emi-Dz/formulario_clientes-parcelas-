@@ -11,6 +11,7 @@ interface ClientFormPageProps {
     onCancel: () => void;
     isLoading: boolean;
     loadingMessage: string | null;
+    error: string | null;
 }
 
 const emptyFormData: Omit<SaleData, 'id'> = {
@@ -54,7 +55,7 @@ const emptyFormData: Omit<SaleData, 'id'> = {
     notes: '',
 };
 
-export const ClientFormPage: React.FC<ClientFormPageProps> = ({ editingClientId, onSave, onCancel, isLoading, loadingMessage }) => {
+export const ClientFormPage: React.FC<ClientFormPageProps> = ({ editingClientId, onSave, onCancel, isLoading, loadingMessage, error }) => {
     const { t } = useLanguage();
 
     const initialData = useMemo(() => {
@@ -90,6 +91,7 @@ export const ClientFormPage: React.FC<ClientFormPageProps> = ({ editingClientId,
                 isLoading={isLoading}
                 loadingMessage={loadingMessage}
                 isEditMode={isEditMode}
+                error={error}
             />
         </div>
     );
