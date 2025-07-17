@@ -1,6 +1,7 @@
 
+
 import React, { useState, useMemo } from 'react';
-import { SaleData } from '../types';
+import { SaleData, ClientStatus } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 
 interface ClientListPageProps {
@@ -12,23 +13,31 @@ interface ClientListPageProps {
     generatingSummaryId: string | null;
     onRefresh: () => void;
     isRefreshing: boolean;
+    onUpdateStatus: (client: SaleData, newStatus: ClientStatus) => void;
+    updatingStatusId: string | null;
 }
 
 const EditIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z" />
     </svg>
 );
 
 const DeleteIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
     </svg>
 );
 
 const SummaryIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+);
+
+const FlagIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6H8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
     </svg>
 );
 
@@ -52,7 +61,7 @@ const NewPlusIcon = () => (
 );
 
 
-export const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit, onNew, onDelete, onGenerateSummary, generatingSummaryId, onRefresh, isRefreshing }) => {
+export const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit, onNew, onDelete, onGenerateSummary, generatingSummaryId, onRefresh, isRefreshing, onUpdateStatus, updatingStatusId }) => {
     const { t } = useLanguage();
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -70,6 +79,10 @@ export const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit,
         );
     }, [clients, searchTerm]);
 
+    const handleStatusChange = (client: SaleData) => {
+        const newStatus = client.clientStatus === 'apto' ? 'no_apto' : 'apto';
+        onUpdateStatus(client, newStatus);
+    }
 
     return (
         <div className="bg-white dark:bg-slate-800 p-6 md:p-8 rounded-xl shadow-lg">
@@ -138,12 +151,17 @@ export const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit,
                         </thead>
                         <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
                             {filteredClients.map((client) => (
-                                <tr key={client.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                <tr key={client.id} className={`${client.clientStatus === 'no_apto' ? 'bg-red-50 dark:bg-red-900/20' : ''} hover:bg-slate-50 dark:hover:bg-slate-700/50`}>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
                                         {client.clientCpf}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm font-medium text-slate-900 dark:text-white">{client.clientFullName}</div>
+                                        <div className="flex items-center">
+                                            <span className="text-sm font-medium text-slate-900 dark:text-white">{client.clientFullName}</span>
+                                            {client.clientStatus === 'no_apto' && (
+                                                <span className="ml-2 px-2 py-0.5 text-xs font-semibold text-red-800 bg-red-200 dark:bg-red-800 dark:text-red-100 rounded-full">{t('status_no_apto')}</span>
+                                            )}
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="text-sm text-slate-900 dark:text-slate-300">{client.product}</div>
@@ -155,19 +173,30 @@ export const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit,
                                         {t(client.paymentSystem?.toLowerCase() ?? '')}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <div className="flex items-center justify-end gap-2">
+                                        <div className="flex items-center justify-end gap-1 sm:gap-2">
+                                            <button 
+                                                onClick={() => handleStatusChange(client)}
+                                                disabled={!!updatingStatusId || !client.clientCpf}
+                                                className={`inline-flex items-center justify-center p-2 border border-transparent text-sm leading-4 font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed
+                                                    ${client.clientStatus === 'no_apto' 
+                                                        ? 'text-green-700 bg-green-100 hover:bg-green-200 focus:ring-green-500 dark:bg-green-900/50 dark:text-green-300 dark:hover:bg-green-900' 
+                                                        : 'text-amber-700 bg-amber-100 hover:bg-amber-200 focus:ring-amber-500 dark:bg-amber-900/50 dark:text-amber-300 dark:hover:bg-amber-900'}`}
+                                                title={client.clientStatus === 'apto' ? t('mark_as_not_apt') : t('mark_as_apt')}
+                                            >
+                                                {updatingStatusId === client.id ? <LoadingSpinnerIcon /> : <FlagIcon />}
+                                            </button>
                                             <button 
                                                 onClick={() => onGenerateSummary(client.id)} 
                                                 disabled={!!generatingSummaryId}
-                                                className="inline-flex items-center justify-center px-3 py-1.5 border border-transparent text-sm leading-4 font-medium rounded-md text-sky-700 bg-sky-100 hover:bg-sky-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 dark:bg-sky-900/50 dark:text-sky-300 dark:hover:bg-sky-900 disabled:opacity-60 disabled:cursor-not-allowed"
+                                                className="inline-flex items-center justify-center p-2 border border-transparent text-sm leading-4 font-medium rounded-md text-sky-700 bg-sky-100 hover:bg-sky-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 dark:bg-sky-900/50 dark:text-sky-300 dark:hover:bg-sky-900 disabled:opacity-60 disabled:cursor-not-allowed"
                                                 title={t('generateSummaryButton')}
                                             >
                                                 {generatingSummaryId === client.id ? <LoadingSpinnerIcon /> : <SummaryIcon />}
                                             </button>
-                                            <button onClick={() => onEdit(client.id)} className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-indigo-900/50 dark:text-indigo-300 dark:hover:bg-indigo-900" title={t('editButton')}>
+                                            <button onClick={() => onEdit(client.id)} className="inline-flex items-center p-2 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-indigo-900/50 dark:text-indigo-300 dark:hover:bg-indigo-900" title={t('editButton')}>
                                                 <EditIcon />
                                             </button>
-                                            <button onClick={() => onDelete(client.id, client.clientFullName)} className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900" title={t('deleteButton')}>
+                                            <button onClick={() => onDelete(client.id, client.clientFullName)} className="inline-flex items-center p-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900" title={t('deleteButton')}>
                                                 <DeleteIcon />
                                             </button>
                                         </div>
