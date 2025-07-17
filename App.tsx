@@ -1,7 +1,8 @@
 
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { Header } from './components/Header';
-import { SaleData, AuthUser } from './types';
+import { SaleData, AuthUser, ClientStatus } from './types';
 import * as n8nService from './services/n8nService';
 import * as clientStore from './services/clientStore';
 import { ClientListPage } from './pages/ClientListPage';
@@ -38,6 +39,7 @@ const App: React.FC = () => {
     const [clientToDelete, setClientToDelete] = useState<{ id: string; name: string } | null>(null);
     const [isDeleting, setIsDeleting] = useState<boolean>(false);
     const [isGeneratingSummaryId, setIsGeneratingSummaryId] = useState<string | null>(null);
+    const [isUpdatingStatusId, setIsUpdatingStatusId] = useState<string | null>(null);
 
     const fetchClients = useCallback(async () => {
         setIsFetchingClients(true);
@@ -246,6 +248,30 @@ const App: React.FC = () => {
         }
     };
 
+    const handleUpdateClientStatus = async (client: SaleData, newStatus: ClientStatus) => {
+        if (currentUser?.role !== 'admin' || !client.clientCpf) return;
+        
+        setIsUpdatingStatusId(client.id);
+        setError(null);
+        setSuccessMessage(null);
+
+        try {
+            const success = await n8nService.updateClientStatusInN8n(client.clientCpf, newStatus);
+            if (success) {
+                await fetchClients(); // Refresh data to show updated status everywhere
+                const statusText = newStatus === 'apto' ? t('status_apto') : t('status_no_apto');
+                showSuccess(t('successStatusUpdate', { clientName: client.clientFullName, status: statusText }));
+            } else {
+                showError(t('errorStatusUpdate', { clientName: client.clientFullName }));
+            }
+        } catch (err) {
+             const errorMessage = err instanceof Error ? err.message : t('errorUnknown');
+            showError(`${t('errorStatusUpdate', { clientName: client.clientFullName })}: ${errorMessage}`);
+        } finally {
+             setIsUpdatingStatusId(null);
+        }
+    };
+
 
     const renderView = () => {
         // For sellers, the view is always the form to add a new client.
@@ -281,6 +307,8 @@ const App: React.FC = () => {
                     generatingSummaryId={isGeneratingSummaryId}
                     onRefresh={fetchClients}
                     isRefreshing={isFetchingClients}
+                    onUpdateStatus={handleUpdateClientStatus}
+                    updatingStatusId={isUpdatingStatusId}
                 />;
             }
 
@@ -324,7 +352,7 @@ const App: React.FC = () => {
 
             {/* Success Toast Notification */}
             {successMessage && (
-                <div className="fixed bottom-8 right-8 z-50 max-w-md w-auto" role="status" aria-live="polite">
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 max-w-md w-auto" role="status" aria-live="polite">
                     <div className="bg-emerald-500 text-white font-bold rounded-lg shadow-xl p-4 flex items-center">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
