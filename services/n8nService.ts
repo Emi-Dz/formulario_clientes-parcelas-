@@ -1,4 +1,4 @@
-import { SaleData, PaymentSystem, UserWithPassword } from '../types';
+import { SaleData, PaymentSystem, UserWithPassword, ClientStatus } from '../types';
 
 /**
  * Fetches the list of all users from the n8n webhook for authentication.
@@ -121,6 +121,8 @@ export const fetchClientsFromN8n = async (): Promise<SaleData[]> => {
         const mappedClients: SaleData[] = clientListRaw.map((rawClient: any) => {
              if (!rawClient || typeof rawClient !== 'object') return null;
             const paymentSystemValue = (rawClient['Sisteme de pago'] || rawClient['Sistema de pago'] || PaymentSystem.MENSAL).toUpperCase();
+            
+            const statusValue = (rawClient.clientStatus || rawClient.status || 'apto').toLowerCase();
 
             return {
                 id: String(rawClient.row_number || `temp_${Date.now()}_${Math.random()}`),
@@ -166,6 +168,7 @@ export const fetchClientsFromN8n = async (): Promise<SaleData[]> => {
                 vendedor: rawClient['Vendedor'] || '',
                 guarantor: rawClient['Garante'] || '',
                 notes: rawClient['Observaciones'] || '',
+                clientStatus: statusValue === 'no_apto' ? 'no_apto' : 'apto',
             };
         }).filter((client): client is SaleData => client !== null);
 
@@ -307,6 +310,51 @@ export const deleteClientInN8n = async (clientId: string): Promise<boolean> => {
 
     } catch (error) {
         console.error(`[n8nService] Error sending delete request to n8n. URL: ${DELETE_URL}. Error:`, error);
+        return false;
+    }
+};
+
+/**
+ * Sends a request to an n8n webhook to update a client's status across all their records.
+ *
+ * @param {string} clientCpf - The CPF of the client to update.
+ * @param {ClientStatus} status - The new status to set ('apto' or 'no_apto').
+ * @returns {Promise<boolean>} - True for success, false for failure.
+ */
+export const updateClientStatusInN8n = async (clientCpf: string, status: ClientStatus): Promise<boolean> => {
+    const UPDATE_STATUS_URL = import.meta.env.VITE_N8N_UPDATE_CLIENT_STATUS_URL;
+    if (!UPDATE_STATUS_URL) {
+        console.error("Configuration error: VITE_N8N_UPDATE_CLIENT_STATUS_URL is not defined in your .env file.");
+        return false;
+    }
+
+    console.log(`[n8nService] Attempting to update status for CPF ${clientCpf} to '${status}' via: ${UPDATE_STATUS_URL}`);
+
+    try {
+        const payload = {
+            clientCpf,
+            status,
+        };
+
+        const response = await fetch(UPDATE_STATUS_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            console.error(`[n8nService] Status update failed. Status: ${response.status}. URL: ${UPDATE_STATUS_URL}. Response Body:`, errorBody);
+            return false;
+        }
+
+        console.log(`[n8nService] Status for CPF ${clientCpf} successfully updated to '${status}'.`);
+        return true;
+
+    } catch (error) {
+        console.error(`[n8nService] Error sending status update to n8n. URL: ${UPDATE_STATUS_URL}. Error:`, error);
         return false;
     }
 };
