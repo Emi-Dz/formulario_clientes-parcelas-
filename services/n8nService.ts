@@ -203,7 +203,14 @@ export const sendFormDataToN8n = async (
     console.log(`[n8nService] Attempting to POST form data to: ${N8N_FORM_URL}`);
     const formData = new FormData();
 
-    Object.entries(data).forEach(([key, value]) => {
+    // To prevent the n8n workflow from being confused by an empty `id` field on new submissions,
+    // we create a copy of the data and remove the `id` if it's a new record.
+    const dataToSend: any = { ...data };
+    if (!data.id || data.id.startsWith('temp_')) {
+        delete dataToSend.id;
+    }
+
+    Object.entries(dataToSend).forEach(([key, value]) => {
          if (value === null || value === undefined) {
             formData.append(key, '');
         } else {
@@ -217,6 +224,7 @@ export const sendFormDataToN8n = async (
         }
     });
     
+    // The presence of `row_number` is the single source of truth for an update.
     if (data.id && !data.id.startsWith('temp_')) {
         formData.set('row_number', data.id);
     }
