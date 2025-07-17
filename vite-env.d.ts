@@ -22,6 +22,7 @@ interface ImportMetaEnv {
 
   /**
    * The webhook URL to fetch all clients from n8n.
+   * Should now include the `clientStatus` field.
    */
   readonly VITE_N8N_GET_CLIENTS_URL?: string;
   
@@ -29,6 +30,11 @@ interface ImportMetaEnv {
    * The webhook URL to delete a client in n8n.
    */
   readonly VITE_N8N_DELETE_CLIENT_URL?: string;
+
+  /**
+   * The webhook URL to update a client's status (e.g., mark as 'not apt').
+   */
+  readonly VITE_N8N_UPDATE_CLIENT_STATUS_URL?: string;
 
   /**
    * (Legacy) The URL for the read-only Google Apps Script that fetches the client list.
