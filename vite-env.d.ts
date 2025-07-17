@@ -4,9 +4,21 @@
 
 interface ImportMetaEnv {
   /**
-   * The webhook URL for the primary n8n workflow that handles form data and file uploads.
+   * The webhook URL to fetch all users for authentication.
+   */
+  readonly VITE_N8N_GET_USERS_URL?: string;
+  
+  /**
+   * The webhook URL for the n8n workflow that handles UPDATING form data and file uploads.
+   * This is used for modifications.
    */
   readonly VITE_N8N_FORM_WORKFLOW_URL?: string;
+
+  /**
+   * The webhook URL for the n8n workflow that handles CREATING a new purchase.
+   * This is used for new submissions.
+   */
+  readonly VITE_N8N_NEW_PURCHASE_WORKFLOW_URL?: string;
 
   /**
    * The webhook URL to fetch all clients from n8n.
