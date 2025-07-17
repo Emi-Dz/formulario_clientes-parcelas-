@@ -90,23 +90,6 @@ const App: React.FC = () => {
         setError(null);
         setSuccessMessage(null);
         setLoadingMessage(t('loading'));
-        
-        if (!formData.id && formData.clientCpf) {
-            const normalizeCpf = (cpf: string) => (cpf || '').replace(/\D/g, '');
-            const newClientCpf = normalizeCpf(formData.clientCpf);
-
-            // Fetch the latest client list before checking for duplicates
-            const currentClients = await n8nService.fetchClientsFromN8n();
-
-            if (newClientCpf) {
-                const clientExists = currentClients.some(client => normalizeCpf(client.clientCpf) === newClientCpf);
-                if (clientExists) {
-                    showError(t('errorClientExists'));
-                    setIsLoading(false);
-                    return;
-                }
-            }
-        }
 
         try {
             const finalData = {
@@ -251,6 +234,8 @@ const App: React.FC = () => {
                         onCancel={isAuthenticated ? handleGoToList : handleGoHome}
                         isLoading={isLoading}
                         loadingMessage={loadingMessage}
+                        error={error}
+                        clients={clients}
                     />
                 );
             case 'home':
@@ -272,7 +257,7 @@ const App: React.FC = () => {
                                 {successMessage}
                             </div>
                         )}
-                        {error && (
+                        {error && view !== 'form' && (
                             <div className="mb-4 p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 rounded-lg">
                                 {error}
                             </div>
@@ -325,3 +310,4 @@ const App: React.FC = () => {
 
 
 export default App;
+
