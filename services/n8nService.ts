@@ -1,4 +1,3 @@
-
 import { SaleData, PaymentSystem, UserWithPassword } from '../types';
 
 /**
@@ -10,12 +9,17 @@ export const fetchUsers = async (): Promise<UserWithPassword[]> => {
     const GET_USERS_URL = import.meta.env.VITE_N8N_GET_USERS_URL;
 
     if (!GET_USERS_URL) {
+        console.error("Configuration error: VITE_N8N_GET_USERS_URL is not defined in your .env file.");
         throw new Error("Configuration error: VITE_N8N_GET_USERS_URL is not defined.");
     }
+
+    console.log(`[n8nService] Attempting to fetch users from: ${GET_USERS_URL}`);
 
     try {
         const response = await fetch(GET_USERS_URL, { method: 'GET', mode: 'cors', cache: 'no-cache' });
         if (!response.ok) {
+            const errorBody = await response.text();
+            console.error(`[n8nService] Failed to fetch users. Status: ${response.status}. URL: ${GET_USERS_URL}. Response Body:`, errorBody);
             throw new Error(`Failed to fetch users from n8n: ${response.status} ${response.statusText}`);
         }
         
@@ -43,7 +47,7 @@ export const fetchUsers = async (): Promise<UserWithPassword[]> => {
         }));
 
     } catch (error) {
-        console.error("Error fetching or parsing users from n8n:", error);
+        console.error(`[n8nService] Error during fetch or parsing for users. URL: ${GET_USERS_URL}. Error:`, error);
         throw error;
     }
 };
@@ -58,21 +62,23 @@ export const fetchClientsFromN8n = async (): Promise<SaleData[]> => {
     const GET_CLIENTS_URL = import.meta.env.VITE_N8N_GET_CLIENTS_URL;
 
     if (!GET_CLIENTS_URL) {
-        console.warn("VITE_N8N_GET_CLIENTS_URL is not defined. Cannot fetch clients.");
+        console.error("Configuration error: VITE_N8N_GET_CLIENTS_URL is not defined in your .env file.");
         return [];
     }
+    
+    console.log(`[n8nService] Attempting to fetch clients from: ${GET_CLIENTS_URL}`);
 
     try {
         const response = await fetch(GET_CLIENTS_URL, { method: 'GET', mode: 'cors', cache: 'no-cache' });
         if (!response.ok) {
             const errorBody = await response.text();
-            throw new Error(`Failed to fetch clients from n8n: ${response.status} ${response.statusText}. Body: ${errorBody}`);
+            console.error(`[n8nService] Failed to fetch clients. Status: ${response.status}. URL: ${GET_CLIENTS_URL}. Response Body:`, errorBody);
+            throw new Error(`Failed to fetch clients from n8n: ${response.status} ${response.statusText}.`);
         }
         
         const responseText = await response.text();
         if (!responseText) {
-            // Webhook returned 200 OK but with an empty body.
-            // This can happen if there are no clients. Treat as an empty list.
+            console.log("[n8nService] Fetched clients successfully, but response body was empty. Returning empty array.");
             return [];
         }
         const responseBody = JSON.parse(responseText);
@@ -81,22 +87,15 @@ export const fetchClientsFromN8n = async (): Promise<SaleData[]> => {
 
         // Try to find the array of clients in various common n8n response structures.
         if (Array.isArray(responseBody)) {
-            // Case 1: The response body is the array of clients.
-            // This could be direct [ {client1}, {client2} ] or wrapped [ {json: client1}, {json: client2} ]
             clientListRaw = responseBody;
         } else if (typeof responseBody === 'object' && responseBody !== null) {
-            // Case 2: The response is an object, look for a property containing the array.
             if (Array.isArray(responseBody.data)) {
-                // e.g., { "data": [...] }
                 clientListRaw = responseBody.data;
             } else if (Array.isArray(responseBody.items)) {
-                // e.g., { "items": [...] }
                 clientListRaw = responseBody.items;
             } else if (Array.isArray(responseBody.results)) {
-                // e.g., { "results": [...] }
                 clientListRaw = responseBody.results;
             } else {
-                // Fallback: find the first property that is an array.
                 const potentialArray = Object.values(responseBody).find(val => Array.isArray(val));
                 if (potentialArray && Array.isArray(potentialArray)) {
                     clientListRaw = potentialArray;
@@ -104,30 +103,24 @@ export const fetchClientsFromN8n = async (): Promise<SaleData[]> => {
             }
         }
 
-        // If no array was found, warn and return empty.
         if (!Array.isArray(clientListRaw)) {
-            console.warn("Could not find a client array in the response from n8n. Response body:", responseBody);
+            console.warn("[n8nService] Could not find a client array in the response from n8n. Response body:", responseBody);
             return [];
         }
 
-        // n8n often wraps each item's data in a `json` property.
-        // We check the first item to see if this unwrapping is needed.
         if (clientListRaw.length > 0 && clientListRaw[0] && typeof clientListRaw[0] === 'object' && clientListRaw[0].json) {
            clientListRaw = clientListRaw.map((item: any) => item.json);
         }
 
-        // Map the raw data from Google Sheets/n8n to the app's SaleData structure.
         const mappedClients: SaleData[] = clientListRaw.map((rawClient: any) => {
              if (!rawClient || typeof rawClient !== 'object') return null;
-            // Handle potential typo in the column name from Google Sheets ("Sisteme" vs "Sistema").
             const paymentSystemValue = (rawClient['Sisteme de pago'] || rawClient['Sistema de pago'] || PaymentSystem.MENSAL).toUpperCase();
 
             return {
-                id: String(rawClient.row_number || `temp_${Date.now()}_${Math.random()}`), // Use row_number as a stable ID
+                id: String(rawClient.row_number || `temp_${Date.now()}_${Math.random()}`),
                 timestamp: rawClient['Marca temporal'] || '',
                 clientFullName: rawClient['Nombre y Apellido'] || '',
                 clientCpf: rawClient['CPF Cliente'] || '',
-                // Use the date part of the timestamp for purchase date, or default to today.
                 purchaseDate: rawClient['Marca temporal']?.split(',')[0] || new Date().toISOString().split('T')[0],
                 phone: String(rawClient['Telefono Cliente'] || ''),
                 product: rawClient['Productos'] || '',
@@ -168,12 +161,12 @@ export const fetchClientsFromN8n = async (): Promise<SaleData[]> => {
                 guarantor: rawClient['Garante'] || '',
                 notes: rawClient['Observaciones'] || '',
             };
-        }).filter((client): client is SaleData => client !== null); // Filter out any nulls from failed mappings
+        }).filter((client): client is SaleData => client !== null);
 
         return mappedClients;
 
     } catch (error) {
-        console.error("Error fetching or parsing clients from n8n:", error);
+        console.error(`[n8nService] Error fetching or parsing clients from n8n. URL: ${GET_CLIENTS_URL}. Error:`, error);
         throw error;
     }
 };
@@ -196,14 +189,13 @@ export const sendFormDataToN8n = async (
     const N8N_FORM_URL = import.meta.env.VITE_N8N_FORM_WORKFLOW_URL;
 
     if (!N8N_FORM_URL) {
-        console.warn("VITE_N8N_FORM_WORKFLOW_URL not set. Skipping form submission to n8n.");
-        return true; 
+        console.error("Configuration error: VITE_N8N_FORM_WORKFLOW_URL not set in .env file.");
+        throw new Error("Configuration error: VITE_N8N_FORM_WORKFLOW_URL is not defined.");
     }
-
+    
+    console.log(`[n8nService] Attempting to POST form data to: ${N8N_FORM_URL}`);
     const formData = new FormData();
 
-    // 1. Append all data from the form state as string values.
-    // This includes existing filenames and the filenames of new files.
     Object.entries(data).forEach(([key, value]) => {
          if (value === null || value === undefined) {
             formData.append(key, '');
@@ -212,17 +204,12 @@ export const sendFormDataToN8n = async (
         }
     });
     
-    // 2. For each newly uploaded file, overwrite the string value in FormData
-    // with the actual file object. This ensures that for a given field (e.g., 'photoStoreFileName'),
-    // we send EITHER the old filename (if unchanged) OR the new file object, but never both.
     Object.entries(files).forEach(([key, file]) => {
         if(file) {
             formData.set(key, file, file.name);
         }
     });
     
-    // For updates, send the row_number so the n8n workflow knows which record to modify.
-    // The client ID is the row_number from the Google Sheet.
     if (data.id && !data.id.startsWith('temp_')) {
         formData.set('row_number', data.id);
     }
@@ -235,17 +222,17 @@ export const sendFormDataToN8n = async (
 
         if (!response.ok) {
             const errorBody = await response.text();
-            console.error(`n8n form workflow returned an error: ${response.status} ${response.statusText}. Response: ${errorBody}`);
+            console.error(`[n8nService] Form submission failed. Status: ${response.status}. URL: ${N8N_FORM_URL}. Response Body:`, errorBody);
             return false;
         }
 
-        console.log("Form data successfully sent to n8n.");
+        console.log("[n8nService] Form data successfully sent to n8n.");
         return true;
 
     } catch (error) {
-        console.error("Error sending form data to n8n:", error);
+        console.error(`[n8nService] Error sending form data to n8n. URL: ${N8N_FORM_URL}. Error:`, error);
         if (error instanceof TypeError) {
-             console.error("A network error occurred. Check the connection and CORS settings for the n8n webhook.");
+             console.error("[n8nService] A network error occurred. Check the connection and CORS settings for the n8n webhook.");
         }
         return false;
     }
@@ -260,12 +247,13 @@ export const sendFormDataToN8n = async (
 export const deleteClientInN8n = async (clientId: string): Promise<boolean> => {
     const DELETE_URL = import.meta.env.VITE_N8N_DELETE_CLIENT_URL;
     if (!DELETE_URL) {
-        console.warn("VITE_N8N_DELETE_CLIENT_URL is not defined. Cannot delete client.");
+        console.error("Configuration error: VITE_N8N_DELETE_CLIENT_URL is not defined in your .env file.");
         return false;
     }
 
+    console.log(`[n8nService] Attempting to POST delete request for client ID ${clientId} to: ${DELETE_URL}`);
+
     try {
-        // The payload sent to n8n for deletion. It identifies the client by their row_number.
         const payload = {
             row_number: clientId
         };
@@ -280,15 +268,15 @@ export const deleteClientInN8n = async (clientId: string): Promise<boolean> => {
 
         if (!response.ok) {
             const errorBody = await response.text();
-            console.error(`n8n delete workflow returned an error: ${response.status} ${response.statusText}. Response: ${errorBody}`);
+            console.error(`[n8nService] Delete request failed. Status: ${response.status}. URL: ${DELETE_URL}. Response Body:`, errorBody);
             return false;
         }
 
-        console.log(`Client ${clientId} successfully deleted via n8n.`);
+        console.log(`[n8nService] Client ${clientId} successfully deleted via n8n.`);
         return true;
 
     } catch (error) {
-        console.error("Error sending delete request to n8n:", error);
+        console.error(`[n8nService] Error sending delete request to n8n. URL: ${DELETE_URL}. Error:`, error);
         return false;
     }
 };
