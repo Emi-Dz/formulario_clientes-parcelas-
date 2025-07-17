@@ -246,26 +246,12 @@ const App: React.FC = () => {
 
 
     const renderView = () => {
-        if (currentUser?.role === 'admin' && view === 'list') {
-             if (isFetchingClients && clients.length === 0) {
-                return <div className="text-center p-10">{t('loading_clients')}</div>
-            }
-            return <ClientListPage 
-                clients={clients} 
-                onEdit={handleGoToEditForm} 
-                onNew={handleGoToNewForm} 
-                onDelete={handleRequestDelete}
-                onGenerateSummary={handleGenerateSummary}
-                generatingSummaryId={isGeneratingSummaryId}
-                onRefresh={fetchClients}
-                isRefreshing={isFetchingClients}
-            />;
-        }
-        if (view === 'form') {
+        // For sellers, the view is always the form to add a new client.
+        if (currentUser?.role === 'vendedor') {
             return (
                 <ClientFormPage 
                     key={formKey}
-                    editingClientId={currentUser?.role === 'admin' ? editingClientId : null}
+                    editingClientId={null} // Sellers can only create new clients
                     onSave={handleSave}
                     onCancel={handleCancelForm}
                     isLoading={isLoading}
@@ -274,7 +260,42 @@ const App: React.FC = () => {
                 />
             );
         }
-        return <div className="text-center p-10">{t('loading')}</div>; // Fallback
+
+        // For admins, the view depends on the `view` state variable
+        if (currentUser?.role === 'admin') {
+            if (view === 'list') {
+                 if (isFetchingClients && clients.length === 0) {
+                    return <div className="text-center p-10">{t('loading_clients')}</div>
+                }
+                return <ClientListPage 
+                    clients={clients} 
+                    onEdit={handleGoToEditForm} 
+                    onNew={handleGoToNewForm} 
+                    onDelete={handleRequestDelete}
+                    onGenerateSummary={handleGenerateSummary}
+                    generatingSummaryId={isGeneratingSummaryId}
+                    onRefresh={fetchClients}
+                    isRefreshing={isFetchingClients}
+                />;
+            }
+
+            if (view === 'form') {
+                return (
+                    <ClientFormPage 
+                        key={formKey}
+                        editingClientId={editingClientId} // Admins can edit existing clients
+                        onSave={handleSave}
+                        onCancel={handleCancelForm}
+                        isLoading={isLoading}
+                        loadingMessage={loadingMessage}
+                        error={error}
+                    />
+                );
+            }
+        }
+        
+        // Fallback for initial loading after login but before role is processed, or unexpected states.
+        return <div className="text-center p-10">{t('loading')}</div>;
     }
 
     if (!currentUser) {
