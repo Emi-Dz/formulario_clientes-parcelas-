@@ -1,4 +1,3 @@
-
 export const translations: { [key: string]: { [key:string]: string } } = {
     es: {
         // Header
@@ -43,6 +42,12 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         generateSummaryButton: 'Generar Resumen',
         colCpf: 'CPF',
         colPaymentSystem: 'Modo de Pago',
+        status: 'Estado',
+        status_apto: 'Apto',
+        status_no_apto: 'No Apto',
+        mark_as_not_apt: 'Marcar como NO Apto',
+        mark_as_apt: 'Marcar como Apto',
+        updating_status: 'Actualizando...',
 
         // Delete Confirmation
         deleteConfirmTitle: '¿Estás seguro?',
@@ -132,6 +137,7 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         successNew: 'Nueva compra cargada exitosamente!',
         successDelete: 'Compra de {{clientName}} borrada exitosamente.',
         successGenerateSummary: 'Resumen para {{clientName}} generado. La descarga comenzará pronto.',
+        successStatusUpdate: 'Estado de {{clientName}} actualizado a {{status}}.',
         errorPrefix: 'Error',
         errorUnknown: 'Ocurrió un error desconocido.',
         error_n8n_form: 'Error al enviar los datos del formulario.',
@@ -139,6 +145,9 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         errorClientExists: 'El cliente con este CPF ya existe.',
         errorDelete: 'Error al borrar la compra de {{clientName}}.',
         errorGenerateSummary: 'Error al generar el resumen para {{clientName}}.',
+        errorStatusUpdate: 'Error al actualizar el estado de {{clientName}}.',
+        warning_client_not_apt: 'CLIENTE NO APTO. CONTACTAR AL ADMINISTRADOR.',
+
     },
     pt: {
         // Header
@@ -182,6 +191,12 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         generateSummaryButton: 'Gerar Resumo',
         colCpf: 'CPF',
         colPaymentSystem: 'Forma de Pagamento',
+        status: 'Status',
+        status_apto: 'Apto',
+        status_no_apto: 'Não Apto',
+        mark_as_not_apt: 'Marcar como NÃO Apto',
+        mark_as_apt: 'Marcar como Apto',
+        updating_status: 'Atualizando...',
 
         // Delete Confirmation
         deleteConfirmTitle: 'Você tem certeza?',
@@ -270,6 +285,7 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         successNew: 'Nova compra carregada com sucesso!',
         successDelete: 'Compra de {{clientName}} excluída com sucesso.',
         successGenerateSummary: 'Resumo para {{clientName}} gerado. O download começará em breve.',
+        successStatusUpdate: 'Status de {{clientName}} atualizado para {{status}}.',
         errorPrefix: 'Erro',
         errorUnknown: 'Ocorreu um erro desconhecido.',
         error_n8n_form: 'Erro ao enviar os dados do formulário.',
@@ -277,5 +293,7 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         errorClientExists: 'O cliente com este CPF já existe.',
         errorDelete: 'Erro ao excluir a compra de {{clientName}}.',
         errorGenerateSummary: 'Erro ao gerar o resumo para {{clientName}}.',
+        errorStatusUpdate: 'Erro ao atualizar o status de {{clientName}}.',
+        warning_client_not_apt: 'CLIENTE NÃO APTO. ENTRAR EM CONTATO COM O ADMINISTRADOR.',
     },
 };
