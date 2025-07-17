@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { SaleData, PaymentSystem, Language, ClientType } from '../types';
 import { PAYMENT_OPTIONS, CLIENT_TYPE_OPTIONS } from '../constants';
@@ -52,9 +53,10 @@ interface DataEntryFormProps {
     isEditMode: boolean;
     error: string | null;
     clients: SaleData[];
+    isInitialLoading: boolean;
 }
 
-export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSubmit, onCancel, isLoading, loadingMessage, isEditMode, error, clients }) => {
+export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSubmit, onCancel, isLoading, loadingMessage, isEditMode, error, clients, isInitialLoading }) => {
     const [formData, setFormData] = useState<SaleData>(initialData);
     const [fileObjects, setFileObjects] = useState<{ [key: string]: File }>({});
     const [isSearchingCpf, setIsSearchingCpf] = useState(false);
@@ -240,11 +242,11 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
                         value={formData.clientCpf} 
                         onChange={handleChange} 
                         onBlur={handleCpfBlur} 
-                        placeholder="000.000.000-00"
-                        disabled={isSearchingCpf || isEditMode}
+                        placeholder={isInitialLoading ? t('loading_clients') : "000.000.000-00"}
+                        disabled={isSearchingCpf || isEditMode || isInitialLoading}
                         aria-describedby="cpf-search-status"
                     />
-                    {isSearchingCpf && (
+                    {(isSearchingCpf || isInitialLoading) && (
                         <div className="absolute right-3 top-9" role="status" id="cpf-search-status">
                             <span className="sr-only">{t('searchCpf')}</span>
                             <svg className="animate-spin h-5 w-5 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
