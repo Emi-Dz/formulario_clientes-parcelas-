@@ -52,11 +52,13 @@ interface DataEntryFormProps {
     loadingMessage: string | null;
     isEditMode: boolean;
     error: string | null;
+
     clients: SaleData[];
     isInitialLoading: boolean;
 }
 
 export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSubmit, onCancel, isLoading, loadingMessage, isEditMode, error, clients, isInitialLoading }) => {
+
     const [formData, setFormData] = useState<SaleData>(initialData);
     const [fileObjects, setFileObjects] = useState<{ [key: string]: File }>({});
     const [isSearchingCpf, setIsSearchingCpf] = useState(false);

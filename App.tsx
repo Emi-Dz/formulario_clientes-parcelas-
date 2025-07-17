@@ -237,9 +237,11 @@ const App: React.FC = () => {
                         isLoading={isLoading}
                         loadingMessage={loadingMessage}
                         error={error}
+
                         clients={clients}
                         fetchClients={fetchClients}
                         isFetchingClients={isFetchingClients}
+
                     />
                 );
             case 'home':

@@ -13,9 +13,11 @@ interface ClientFormPageProps {
     isLoading: boolean;
     loadingMessage: string | null;
     error: string | null;
+
     clients: SaleData[];
     fetchClients: () => Promise<void>;
     isFetchingClients: boolean;
+
 }
 
 const emptyFormData: Omit<SaleData, 'id'> = {
@@ -59,7 +61,9 @@ const emptyFormData: Omit<SaleData, 'id'> = {
     notes: '',
 };
 
+
 export const ClientFormPage: React.FC<ClientFormPageProps> = ({ editingClientId, onSave, onCancel, isLoading, loadingMessage, error, clients, fetchClients, isFetchingClients }) => {
+
     const { t } = useLanguage();
 
     const isEditMode = !!editingClientId;
@@ -109,8 +113,10 @@ export const ClientFormPage: React.FC<ClientFormPageProps> = ({ editingClientId,
                 loadingMessage={loadingMessage}
                 isEditMode={isEditMode}
                 error={error}
+
                 clients={clients}
                 isInitialLoading={isInitialLoading}
+
             />
         </div>
     );
