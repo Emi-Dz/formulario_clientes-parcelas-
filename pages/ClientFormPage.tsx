@@ -1,5 +1,6 @@
 
-import React, { useMemo } from 'react';
+
+import React, { useMemo, useEffect } from 'react';
 import { DataEntryForm } from '../components/DataEntryForm';
 import { SaleData, PaymentSystem } from '../types';
 import * as clientStore from '../services/clientStore';
@@ -13,6 +14,8 @@ interface ClientFormPageProps {
     loadingMessage: string | null;
     error: string | null;
     clients: SaleData[];
+    fetchClients: () => Promise<void>;
+    isFetchingClients: boolean;
 }
 
 const emptyFormData: Omit<SaleData, 'id'> = {
@@ -56,8 +59,20 @@ const emptyFormData: Omit<SaleData, 'id'> = {
     notes: '',
 };
 
-export const ClientFormPage: React.FC<ClientFormPageProps> = ({ editingClientId, onSave, onCancel, isLoading, loadingMessage, error, clients }) => {
+export const ClientFormPage: React.FC<ClientFormPageProps> = ({ editingClientId, onSave, onCancel, isLoading, loadingMessage, error, clients, fetchClients, isFetchingClients }) => {
     const { t } = useLanguage();
+
+    const isEditMode = !!editingClientId;
+
+    useEffect(() => {
+        // If we are in "new purchase" mode and the clients array is empty,
+        // it means we navigated here directly from the home page.
+        // We need to fetch the clients to enable the CPF auto-fill feature.
+        if (!isEditMode && clients.length === 0) {
+            fetchClients();
+        }
+    }, [isEditMode, clients, fetchClients]);
+
 
     const initialData = useMemo(() => {
         if (editingClientId) {
@@ -77,7 +92,8 @@ export const ClientFormPage: React.FC<ClientFormPageProps> = ({ editingClientId,
         return { ...emptyFormData, id: '' };
     }, [editingClientId]);
 
-    const isEditMode = !!editingClientId;
+    // The data for the form is only ready once the clients have been fetched in "new" mode
+    const isInitialLoading = !isEditMode && isFetchingClients;
 
     return (
         <div>
@@ -94,6 +110,7 @@ export const ClientFormPage: React.FC<ClientFormPageProps> = ({ editingClientId,
                 isEditMode={isEditMode}
                 error={error}
                 clients={clients}
+                isInitialLoading={isInitialLoading}
             />
         </div>
     );
