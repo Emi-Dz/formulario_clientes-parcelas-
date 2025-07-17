@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { Header } from './components/Header';
 import { SaleData } from './types';
@@ -237,6 +238,8 @@ const App: React.FC = () => {
                         loadingMessage={loadingMessage}
                         error={error}
                         clients={clients}
+                        fetchClients={fetchClients}
+                        isFetchingClients={isFetchingClients}
                     />
                 );
             case 'home':
