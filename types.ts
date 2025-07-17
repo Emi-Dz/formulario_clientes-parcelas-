@@ -11,6 +11,8 @@ export type ClientType = 'logista' | 'funcionario' | '';
 
 export type UserRole = 'admin' | 'vendedor';
 
+export type ClientStatus = 'apto' | 'no_apto';
+
 export interface AuthUser {
     id: string;
     username: string;
@@ -68,4 +70,7 @@ export interface SaleData {
     guarantor: string;
     photoInstagramFileName: string;
     notes: string;
+
+    // New field for client eligibility status
+    clientStatus: ClientStatus;
 }
