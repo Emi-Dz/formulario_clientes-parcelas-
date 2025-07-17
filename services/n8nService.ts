@@ -1,3 +1,4 @@
+
 import { SaleData, PaymentSystem, UserWithPassword } from '../types';
 
 /**
@@ -42,8 +43,7 @@ export const fetchUsers = async (): Promise<UserWithPassword[]> => {
             id: String(rawUser['row number'] || rawUser.id),
             username: rawUser.usuario || '',
             password: rawUser.contraseña || '',
-            // As per user request, 'joelito' is the admin user.
-            role: (rawUser.usuario === 'joelito' || rawUser.role === 'admin') ? 'admin' : 'vendedor',
+            role: (rawUser.usuario === 'adminparcelas' || rawUser.role === 'admin') ? 'admin' : 'vendedor',
         }));
 
     } catch (error) {
