@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { SaleData, PaymentSystem, Language, ClientType } from '../types';
 import { PAYMENT_OPTIONS, CLIENT_TYPE_OPTIONS } from '../constants';
@@ -51,11 +52,16 @@ interface DataEntryFormProps {
     loadingMessage: string | null;
     isEditMode: boolean;
     error: string | null;
+
+    clients: SaleData[];
+    isInitialLoading: boolean;
 }
 
-export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSubmit, onCancel, isLoading, loadingMessage, isEditMode, error }) => {
+export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSubmit, onCancel, isLoading, loadingMessage, isEditMode, error, clients, isInitialLoading }) => {
+
     const [formData, setFormData] = useState<SaleData>(initialData);
     const [fileObjects, setFileObjects] = useState<{ [key: string]: File }>({});
+    const [isSearchingCpf, setIsSearchingCpf] = useState(false);
     const { t } = useLanguage();
     const errorRef = useRef<HTMLDivElement>(null);
 
@@ -85,6 +91,51 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
             .replace(/(\d{3})(\d)/, '$1.$2')
             .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
     };
+    
+    const handleCpfBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+        const cpfToFind = e.target.value;
+        if (!cpfToFind || clients.length === 0 || isEditMode) {
+            return;
+        }
+
+        setIsSearchingCpf(true);
+        const normalize = (cpf: string) => (cpf || '').replace(/\D/g, '');
+        const normalizedCpfToFind = normalize(cpfToFind);
+
+        setTimeout(() => {
+            const matchingClients = clients.filter(c => normalize(c.clientCpf) === normalizedCpfToFind);
+
+            if (matchingClients.length > 0) {
+                const lastClient = matchingClients.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
+                
+                setFormData(prevData => ({
+                    ...prevData,
+                    clientFullName: lastClient.clientFullName,
+                    clientType: lastClient.clientType,
+                    phone: lastClient.phone,
+                    language: lastClient.language,
+                    storeName: lastClient.storeName,
+                    guarantor: lastClient.guarantor,
+                    workLocation: lastClient.workLocation,
+                    workAddress: lastClient.workAddress,
+                    homeLocation: lastClient.homeLocation,
+                    homeAddress: lastClient.homeAddress,
+                    reference1Name: lastClient.reference1Name,
+                    reference1Relationship: lastClient.reference1Relationship,
+                    reference2Name: lastClient.reference2Name,
+                    reference2Relationship: lastClient.reference2Relationship,
+                    photoInstagramFileName: lastClient.photoInstagramFileName,
+                    photoStoreFileName: lastClient.photoStoreFileName,
+                    photoHomeFileName: lastClient.photoHomeFileName,
+                    photoIdFrontFileName: lastClient.photoIdFrontFileName,
+                    photoIdBackFileName: lastClient.photoIdBackFileName,
+                    photoCpfFileName: lastClient.photoCpfFileName,
+                }));
+            }
+            setIsSearchingCpf(false);
+        }, 300); // Small delay for UX
+    };
+
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -185,8 +236,29 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
         <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-800 p-4 md:p-6 rounded-xl shadow-lg space-y-6">
             
             <Fieldset legend={t('clientDetails')}>
+                <div className="relative">
+                     <Input 
+                        label={t('cpf')} 
+                        id="clientCpf" 
+                        name="clientCpf" 
+                        value={formData.clientCpf} 
+                        onChange={handleChange} 
+                        onBlur={handleCpfBlur} 
+                        placeholder={isInitialLoading ? t('loading_clients') : "000.000.000-00"}
+                        disabled={isSearchingCpf || isEditMode || isInitialLoading}
+                        aria-describedby="cpf-search-status"
+                    />
+                    {(isSearchingCpf || isInitialLoading) && (
+                        <div className="absolute right-3 top-9" role="status" id="cpf-search-status">
+                            <span className="sr-only">{t('searchCpf')}</span>
+                            <svg className="animate-spin h-5 w-5 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </div>
+                    )}
+                </div>
                 <Input label={t('sobrenomeENome')} id="clientFullName" name="clientFullName" value={formData.clientFullName} onChange={handleChange} placeholder={t('placeholder_clientName')} />
-                <Input label={t('cpf')} id="clientCpf" name="clientCpf" value={formData.clientCpf} onChange={handleChange} placeholder="000.000.000-00"/>
                 <Input label={t('telefone')} id="phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} placeholder={t('placeholder_phone')} />
                 <Input label={t('purchaseDate')} id="purchaseDate" name="purchaseDate" type="date" value={formData.purchaseDate} onChange={handleChange} />
             </Fieldset>

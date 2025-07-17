@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { Header } from './components/Header';
 import { SaleData } from './types';
@@ -90,23 +91,6 @@ const App: React.FC = () => {
         setError(null);
         setSuccessMessage(null);
         setLoadingMessage(t('loading'));
-        
-        if (!formData.id && formData.clientCpf) {
-            const normalizeCpf = (cpf: string) => (cpf || '').replace(/\D/g, '');
-            const newClientCpf = normalizeCpf(formData.clientCpf);
-
-            // Fetch the latest client list before checking for duplicates
-            const currentClients = await n8nService.fetchClientsFromN8n();
-
-            if (newClientCpf) {
-                const clientExists = currentClients.some(client => normalizeCpf(client.clientCpf) === newClientCpf);
-                if (clientExists) {
-                    showError(t('errorClientExists'));
-                    setIsLoading(false);
-                    return;
-                }
-            }
-        }
 
         try {
             const finalData = {
@@ -114,10 +98,11 @@ const App: React.FC = () => {
                 timestamp: formData.timestamp || new Date().toLocaleString('es-AR', { hour12: false })
             };
 
-            const success = await n8nService.sendFormDataToN8n(finalData, fileObjects);
+            const isEditMode = !!editingClientId;
+            const success = await n8nService.sendFormDataToN8n(finalData, fileObjects, isEditMode);
 
             if (success) {
-                 const successMsg = formData.id 
+                 const successMsg = isEditMode 
                     ? t('successUpdate', { clientName: formData.clientFullName })
                     : t('successNew');
                 showSuccess(successMsg);
@@ -140,7 +125,7 @@ const App: React.FC = () => {
             setIsLoading(false);
             setLoadingMessage(null);
         }
-    }, [t, isAuthenticated, fetchClients]);
+    }, [t, isAuthenticated, fetchClients, editingClientId]);
 
     const handleLogin = (password: string): boolean => {
         if (password === CORRECT_PASSWORD) {
@@ -252,6 +237,11 @@ const App: React.FC = () => {
                         isLoading={isLoading}
                         loadingMessage={loadingMessage}
                         error={error}
+
+                        clients={clients}
+                        fetchClients={fetchClients}
+                        isFetchingClients={isFetchingClients}
+
                     />
                 );
             case 'home':
