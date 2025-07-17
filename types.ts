@@ -1,6 +1,7 @@
 export enum PaymentSystem {
   DIARIO = 'DIARIO',
   SEMANAL = 'SEMANAL',
+  QUINCENAL = 'QUINCENAL',
   MENSAL = 'MENSAL',
 }
 
