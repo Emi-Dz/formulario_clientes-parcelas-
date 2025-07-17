@@ -106,8 +106,9 @@ const App: React.FC = () => {
         if (!formData.id && formData.clientCpf) {
             const normalizeCpf = (cpf: string) => (cpf || '').replace(/\D/g, '');
             const newClientCpf = normalizeCpf(formData.clientCpf);
-
-            const currentClients = await n8nService.fetchClientsFromN8n();
+            
+            // Use the already-fetched client list from state instead of re-fetching
+            const currentClients = clients;
 
             if (newClientCpf) {
                 const clientExists = currentClients.some(client => normalizeCpf(client.clientCpf) === newClientCpf);
@@ -145,7 +146,7 @@ const App: React.FC = () => {
             setIsLoading(false);
             setLoadingMessage(null);
         }
-    }, [t, currentUser, fetchClients]);
+    }, [t, currentUser, fetchClients, clients]);
 
     const handleLogin = async (username: string, password: string): Promise<boolean> => {
         setIsLoading(true);
@@ -257,6 +258,9 @@ const App: React.FC = () => {
                     isLoading={isLoading}
                     loadingMessage={loadingMessage}
                     error={error}
+                    clients={clients}
+                    fetchClients={fetchClients}
+                    isFetchingClients={isFetchingClients}
                 />
             );
         }
@@ -289,6 +293,9 @@ const App: React.FC = () => {
                         isLoading={isLoading}
                         loadingMessage={loadingMessage}
                         error={error}
+                        clients={clients}
+                        fetchClients={fetchClients}
+                        isFetchingClients={isFetchingClients}
                     />
                 );
             }
