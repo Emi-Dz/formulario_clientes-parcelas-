@@ -9,6 +9,18 @@ export type Language = 'es' | 'pt' | '';
 
 export type ClientType = 'logista' | 'funcionario' | '';
 
+export type UserRole = 'admin' | 'vendedor';
+
+export interface AuthUser {
+    id: string;
+    username: string;
+    role: UserRole;
+}
+
+export interface UserWithPassword extends AuthUser {
+    password?: string;
+}
+
 export interface SaleData {
     id: string; 
     timestamp: string;
