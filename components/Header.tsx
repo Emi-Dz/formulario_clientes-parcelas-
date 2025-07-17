@@ -2,6 +2,7 @@
 import React from 'react';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { useLanguage } from '../context/LanguageContext';
+import { UserRole } from '../types';
 
 const PaperPlaneIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" viewBox="0 0 24 24" fill="currentColor">
@@ -25,10 +26,11 @@ const LogoutIcon = () => (
 interface HeaderProps {
     onGoHome: () => void;
     onLogout: () => void;
-    isAuthenticated: boolean;
+    isLoggedIn: boolean;
+    userRole: UserRole | undefined;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onGoHome, onLogout, isAuthenticated }) => {
+export const Header: React.FC<HeaderProps> = ({ onGoHome, onLogout, isLoggedIn, userRole }) => {
     const { t } = useLanguage();
     return (
         <header className="bg-gradient-to-r from-slate-800 to-slate-900 shadow-lg">
@@ -41,14 +43,16 @@ export const Header: React.FC<HeaderProps> = ({ onGoHome, onLogout, isAuthentica
                 </div>
                 <div className="flex items-center space-x-2 sm:space-x-4">
                      <LanguageSwitcher />
-                     <button
-                        onClick={onGoHome}
-                        className="p-2 rounded-full text-white hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-white"
-                        aria-label={t('home_viewClients')}
-                    >
-                        <HomeIcon />
-                    </button>
-                    {isAuthenticated && (
+                    {isLoggedIn && userRole === 'admin' && (
+                        <button
+                            onClick={onGoHome}
+                            className="p-2 rounded-full text-white hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-white"
+                            aria-label={t('home_viewClients')}
+                        >
+                            <HomeIcon />
+                        </button>
+                    )}
+                    {isLoggedIn && (
                         <button
                             onClick={onLogout}
                             className="p-2 rounded-full text-white hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-white"

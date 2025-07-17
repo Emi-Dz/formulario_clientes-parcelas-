@@ -10,14 +10,17 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         pt: 'PT',
 
         // Login Page
-        loginTitle: 'Acceso Restringido',
+        loginTitle: 'Electro Parcelas',
+        usernameLabel: 'Usuario',
         passwordLabel: 'Contraseña',
         loginButton: 'Ingresar',
-        loginError: 'Contraseña incorrecta. Por favor, intente de nuevo.',
+        loginError: 'Usuario o contraseña incorrecto.',
+        usernamePlaceholder: 'Ingrese su usuario',
+        welcomeSubtitle: 'Ingrese usuario y contraseña para comenzar',
+
 
         // Home Page
         welcome: 'Bienvenido',
-        welcomeSubtitle: 'Seleccione una opción para comenzar.',
         home_newClient: 'Cargar Nueva Compra',
         home_viewClients: 'Ver Compras',
 
@@ -60,7 +63,6 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         // Form Fields Labels
         sobrenomeENome: 'Apellido y Nombre',
         cpf: 'CPF',
-        searchCpf: 'Buscando CPF...',
         purchaseDate: 'Fecha de Compra',
         telefone: 'Teléfono',
         produtos: 'Productos',
@@ -148,14 +150,16 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         pt: 'PT',
 
         // Login Page
-        loginTitle: 'Acesso Restrito',
+        loginTitle: 'Electro Parcelas',
+        usernameLabel: 'Usuário',
         passwordLabel: 'Senha',
         loginButton: 'Entrar',
-        loginError: 'Senha incorreta. Por favor, tente novamente.',
+        loginError: 'Usuário ou senha incorretos.',
+        usernamePlaceholder: 'Digite seu usuário',
+        welcomeSubtitle: 'Digite seu usuário e senha para começar',
 
         // Home Page
         welcome: 'Bem-vindo',
-        welcomeSubtitle: 'Selecione uma opção para começar.',
         home_newClient: 'Carregar Nova Compra',
         home_viewClients: 'Ver Compras',
 
@@ -198,7 +202,6 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         // Form Fields Labels
         sobrenomeENome: 'Sobrenome e Nome',
         cpf: 'CPF',
-        searchCpf: 'Buscando CPF...',
         purchaseDate: 'Data da Compra',
         telefone: 'Telefone',
         produtos: 'Produtos',

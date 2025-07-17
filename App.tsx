@@ -1,26 +1,29 @@
 
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { Header } from './components/Header';
-import { SaleData } from './types';
+import { SaleData, AuthUser } from './types';
 import * as n8nService from './services/n8nService';
 import * as clientStore from './services/clientStore';
-import { HomePage } from './pages/HomePage';
 import { ClientListPage } from './pages/ClientListPage';
 import { ClientFormPage } from './pages/ClientFormPage';
 import { useLanguage } from './context/LanguageContext';
 import { LoginPage } from './pages/LoginPage';
 import { generateExcel } from './services/excelGenerator';
 
-type View = 'home' | 'list' | 'form';
+type View = 'list' | 'form';
 
-const CORRECT_PASSWORD = 'Lilo0608';
-const AUTH_KEY = 'client-app-auth';
+const AUTH_KEY = 'client-app-user';
 
 const App: React.FC = () => {
-    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => sessionStorage.getItem(AUTH_KEY) === 'true');
-    const [isLoginVisible, setIsLoginVisible] = useState<boolean>(false);
-    const [view, setView] = useState<View>('home');
+    const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
+        const storedUser = sessionStorage.getItem(AUTH_KEY);
+        try {
+            return storedUser ? JSON.parse(storedUser) : null;
+        } catch {
+            return null;
+        }
+    });
+    const [view, setView] = useState<View>('list');
     const [clients, setClients] = useState<SaleData[]>([]);
     const [isFetchingClients, setIsFetchingClients] = useState<boolean>(false);
     const [editingClientId, setEditingClientId] = useState<string | null>(null);
@@ -29,12 +32,12 @@ const App: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const { t } = useLanguage();
+    const [formKey, setFormKey] = useState(1);
 
     // --- State for async actions on list items ---
     const [clientToDelete, setClientToDelete] = useState<{ id: string; name: string } | null>(null);
     const [isDeleting, setIsDeleting] = useState<boolean>(false);
     const [isGeneratingSummaryId, setIsGeneratingSummaryId] = useState<string | null>(null);
-
 
     const fetchClients = useCallback(async () => {
         setIsFetchingClients(true);
@@ -51,29 +54,37 @@ const App: React.FC = () => {
             setIsFetchingClients(false);
         }
     }, [t]);
-    
-    const handleGoHome = () => {
-        setView('home');
-        setIsLoginVisible(false); // Hide login page if user navigates home
-    };
 
-    const handleGoToList = () => {
-        if (isAuthenticated) {
-            setView('list');
+    useEffect(() => {
+        if (currentUser?.role === 'admin') {
             fetchClients();
+        }
+        if(currentUser) {
+            setView(currentUser.role === 'admin' ? 'list' : 'form');
+        }
+    }, [currentUser, fetchClients]);
+
+    const handleGoHome = () => {
+        if (!currentUser) return;
+        if (currentUser.role === 'admin') {
+            setView('list');
         } else {
-            setIsLoginVisible(true);
+            // Seller's "home" is a new form
+            handleGoToNewForm();
         }
     };
     
     const handleGoToNewForm = () => {
         setEditingClientId(null);
         setView('form');
+        setFormKey(k => k + 1); // Force re-mount of form component for a clean state
     };
 
     const handleGoToEditForm = (id: string) => {
+        if (currentUser?.role !== 'admin') return;
         setEditingClientId(id);
         setView('form');
+        setFormKey(k => k + 1);
     };
     
     const showSuccess = (message: string) => {
@@ -91,27 +102,37 @@ const App: React.FC = () => {
         setError(null);
         setSuccessMessage(null);
         setLoadingMessage(t('loading'));
+        
+        if (!formData.id && formData.clientCpf) {
+            const normalizeCpf = (cpf: string) => (cpf || '').replace(/\D/g, '');
+            const newClientCpf = normalizeCpf(formData.clientCpf);
+            
+            // Use the already-fetched client list from state instead of re-fetching
+            const currentClients = clients;
+
+            if (newClientCpf) {
+                const clientExists = currentClients.some(client => normalizeCpf(client.clientCpf) === newClientCpf);
+                if (clientExists) {
+                    showError(t('errorClientExists'));
+                    setIsLoading(false);
+                    return;
+                }
+            }
+        }
 
         try {
-            const finalData = {
-                ...formData,
-                timestamp: formData.timestamp || new Date().toLocaleString('es-AR', { hour12: false })
-            };
-
-            const isEditMode = !!editingClientId;
-            const success = await n8nService.sendFormDataToN8n(finalData, fileObjects, isEditMode);
+            const finalData = { ...formData, timestamp: formData.timestamp || new Date().toLocaleString('es-AR', { hour12: false }) };
+            const success = await n8nService.sendFormDataToN8n(finalData, fileObjects);
 
             if (success) {
-                 const successMsg = isEditMode 
-                    ? t('successUpdate', { clientName: formData.clientFullName })
-                    : t('successNew');
+                const successMsg = formData.id ? t('successUpdate', { clientName: formData.clientFullName }) : t('successNew');
                 showSuccess(successMsg);
-                // Go to list only if authenticated, otherwise go home
-                if (isAuthenticated) {
+                
+                if (currentUser?.role === 'admin') {
                     setView('list');
                     fetchClients();
                 } else {
-                    setView('home');
+                    handleGoToNewForm(); // Reset to a new form for sellers
                 }
             } else {
                  showError(t('error_n8n_form'));
@@ -125,32 +146,48 @@ const App: React.FC = () => {
             setIsLoading(false);
             setLoadingMessage(null);
         }
-    }, [t, isAuthenticated, fetchClients, editingClientId]);
+    }, [t, currentUser, fetchClients, clients]);
 
-    const handleLogin = (password: string): boolean => {
-        if (password === CORRECT_PASSWORD) {
-            setIsAuthenticated(true);
-            sessionStorage.setItem(AUTH_KEY, 'true');
-            setIsLoginVisible(false);
-            setView('list'); // Go to list after successful login
-            fetchClients();
-            return true;
+    const handleLogin = async (username: string, password: string): Promise<boolean> => {
+        setIsLoading(true);
+        try {
+            const users = await n8nService.fetchUsers();
+            const foundUser = users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password);
+            
+            if (foundUser) {
+                const userToStore: AuthUser = { id: foundUser.id, username: foundUser.username, role: foundUser.role };
+                sessionStorage.setItem(AUTH_KEY, JSON.stringify(userToStore));
+                setCurrentUser(userToStore);
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error("Login failed:", error);
+            const errorMessage = error instanceof Error ? error.message : t('errorUnknown');
+            showError(errorMessage);
+            return false;
+        } finally {
+            setIsLoading(false);
         }
-        return false;
     };
 
     const handleLogout = () => {
-        setIsAuthenticated(false);
         sessionStorage.removeItem(AUTH_KEY);
-        setView('home');
+        setCurrentUser(null);
+        setClients([]);
     };
-    
-    const handleCancelLogin = () => {
-        setIsLoginVisible(false);
+
+    const handleCancelForm = () => {
+        if (currentUser?.role === 'admin') {
+            setView('list');
+        } else {
+            handleGoToNewForm();
+        }
     };
 
     // --- Action Handlers ---
     const handleRequestDelete = (id: string, name: string) => {
+        if (currentUser?.role !== 'admin') return;
         setClientToDelete({ id, name });
     };
 
@@ -160,7 +197,7 @@ const App: React.FC = () => {
     };
 
     const handleConfirmDelete = async () => {
-        if (!clientToDelete) return;
+        if (!clientToDelete || currentUser?.role !== 'admin') return;
 
         setIsDeleting(true);
         setError(null);
@@ -169,8 +206,7 @@ const App: React.FC = () => {
         try {
             const success = await n8nService.deleteClientInN8n(clientToDelete.id);
             if (success) {
-                // Remove client from local state to update UI immediately
-                const updatedClients = clients.filter(c => c.id !== clientToDelete.id)
+                const updatedClients = clients.filter(c => c.id !== clientToDelete.id);
                 setClients(updatedClients);
                 clientStore.setClients(updatedClients);
                 showSuccess(t('successDelete', { clientName: clientToDelete.name }));
@@ -187,9 +223,10 @@ const App: React.FC = () => {
     };
 
     const handleGenerateSummary = async (clientId: string) => {
+        if (currentUser?.role !== 'admin') return;
         const client = clients.find(c => c.id === clientId);
         if (!client) {
-            showError('Client not found'); // This should not happen
+            showError('Client not found');
             return;
         }
 
@@ -204,20 +241,36 @@ const App: React.FC = () => {
             const errorMessage = err instanceof Error ? err.message : t('errorUnknown');
             showError(`${t('errorGenerateSummary', { clientName: client.clientFullName })}: ${errorMessage}`);
         } finally {
-            // Give a small delay for the user to see the loading state and perceive action
             setTimeout(() => setIsGeneratingSummaryId(null), 500);
         }
     };
 
 
     const renderView = () => {
-        if (isFetchingClients && view === 'list' && clients.length === 0) {
-            return <div className="text-center p-10">{t('loading_clients')}</div>
+        // For sellers, the view is always the form to add a new client.
+        if (currentUser?.role === 'vendedor') {
+            return (
+                <ClientFormPage 
+                    key={formKey}
+                    editingClientId={null} // Sellers can only create new clients
+                    onSave={handleSave}
+                    onCancel={handleCancelForm}
+                    isLoading={isLoading}
+                    loadingMessage={loadingMessage}
+                    error={error}
+                    clients={clients}
+                    fetchClients={fetchClients}
+                    isFetchingClients={isFetchingClients}
+                />
+            );
         }
-        
-        switch (view) {
-            case 'list':
-                 // This view is protected by the handleGoToList logic
+
+        // For admins, the view depends on the `view` state variable
+        if (currentUser?.role === 'admin') {
+            if (view === 'list') {
+                 if (isFetchingClients && clients.length === 0) {
+                    return <div className="text-center p-10">{t('loading_clients')}</div>
+                }
                 return <ClientListPage 
                     clients={clients} 
                     onEdit={handleGoToEditForm} 
@@ -228,53 +281,53 @@ const App: React.FC = () => {
                     onRefresh={fetchClients}
                     isRefreshing={isFetchingClients}
                 />;
-            case 'form':
+            }
+
+            if (view === 'form') {
                 return (
                     <ClientFormPage 
-                        editingClientId={editingClientId}
+                        key={formKey}
+                        editingClientId={editingClientId} // Admins can edit existing clients
                         onSave={handleSave}
-                        onCancel={isAuthenticated ? handleGoToList : handleGoHome}
+                        onCancel={handleCancelForm}
                         isLoading={isLoading}
                         loadingMessage={loadingMessage}
                         error={error}
-
                         clients={clients}
                         fetchClients={fetchClients}
                         isFetchingClients={isFetchingClients}
-
                     />
                 );
-            case 'home':
-            default:
-                return <HomePage onNewClient={handleGoToNewForm} onViewClients={handleGoToList} />;
+            }
         }
+        
+        // Fallback for initial loading after login but before role is processed, or unexpected states.
+        return <div className="text-center p-10">{t('loading')}</div>;
+    }
+
+    if (!currentUser) {
+        return <LoginPage onLogin={handleLogin} isLoading={isLoading} error={error} />;
     }
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-sans">
-            <Header onGoHome={handleGoHome} onLogout={handleLogout} isAuthenticated={isAuthenticated} />
+            <Header onGoHome={handleGoHome} onLogout={handleLogout} isLoggedIn={!!currentUser} userRole={currentUser.role} />
             <main className="container mx-auto p-4 md:p-8">
-                 {isLoginVisible ? (
-                    <LoginPage onLogin={handleLogin} onCancel={handleCancelLogin} />
-                ) : (
-                    <>
-                        {successMessage && (
-                            <div className="mb-4 p-4 bg-green-100 dark:bg-green-900 border border-green-400 dark:border-green-600 text-green-700 dark:text-green-200 rounded-lg">
-                                {successMessage}
-                            </div>
-                        )}
-                        {error && view !== 'form' && (
-                            <div className="mb-4 p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 rounded-lg">
-                                {error}
-                            </div>
-                        )}
-                        {renderView()}
-                    </>
+                {successMessage && (
+                    <div className="mb-4 p-4 bg-green-100 dark:bg-green-900 border border-green-400 dark:border-green-600 text-green-700 dark:text-green-200 rounded-lg">
+                        {successMessage}
+                    </div>
                 )}
+                {error && view !== 'form' && (
+                    <div className="mb-4 p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 rounded-lg">
+                        {error}
+                    </div>
+                )}
+                {renderView()}
             </main>
 
             {/* Delete Confirmation Modal */}
-            {clientToDelete && (
+            {clientToDelete && currentUser.role === 'admin' && (
                 <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4" aria-modal="true" role="dialog">
                     <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-md transform transition-all">
                         <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t('deleteConfirmTitle')}</h2>
