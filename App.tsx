@@ -97,10 +97,11 @@ const App: React.FC = () => {
                 timestamp: formData.timestamp || new Date().toLocaleString('es-AR', { hour12: false })
             };
 
-            const success = await n8nService.sendFormDataToN8n(finalData, fileObjects);
+            const isEditMode = !!editingClientId;
+            const success = await n8nService.sendFormDataToN8n(finalData, fileObjects, isEditMode);
 
             if (success) {
-                 const successMsg = formData.id 
+                 const successMsg = isEditMode 
                     ? t('successUpdate', { clientName: formData.clientFullName })
                     : t('successNew');
                 showSuccess(successMsg);
@@ -123,7 +124,7 @@ const App: React.FC = () => {
             setIsLoading(false);
             setLoadingMessage(null);
         }
-    }, [t, isAuthenticated, fetchClients]);
+    }, [t, isAuthenticated, fetchClients, editingClientId]);
 
     const handleLogin = (password: string): boolean => {
         if (password === CORRECT_PASSWORD) {
@@ -310,4 +311,3 @@ const App: React.FC = () => {
 
 
 export default App;
-
