@@ -39,12 +39,19 @@ export const fetchUsers = async (): Promise<UserWithPassword[]> => {
             userListRaw = userListRaw.map(item => item.json);
         }
 
-        return userListRaw.map((rawUser: any): UserWithPassword => ({
-            id: String(rawUser['row number'] || rawUser.id),
-            username: rawUser.usuario || '',
-            password: rawUser.contraseña || '',
-            role: (rawUser.usuario === 'adminparcelas' || rawUser.role === 'admin') ? 'admin' : 'vendedor',
-        }));
+        return userListRaw.map((rawUser: any): UserWithPassword => {
+            const username = (rawUser.usuario || '').trim();
+            const roleFromServer = (rawUser.role || '').trim().toLowerCase();
+            
+            const isAdmin = username.toLowerCase() === 'adminparcelas' || roleFromServer === 'admin';
+
+            return {
+                id: String(rawUser['row number'] || rawUser.id),
+                username: username,
+                password: rawUser.contraseña || '',
+                role: isAdmin ? 'admin' : 'vendedor',
+            };
+        });
 
     } catch (error) {
         console.error(`[n8nService] Error during fetch or parsing for users. URL: ${GET_USERS_URL}. Error:`, error);
