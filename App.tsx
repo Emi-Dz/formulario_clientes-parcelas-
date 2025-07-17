@@ -178,6 +178,7 @@ const App: React.FC = () => {
     };
 
     const handleCancelForm = () => {
+        setEditingClientId(null);
         if (currentUser?.role === 'admin') {
             setView('list');
         } else {
@@ -313,11 +314,6 @@ const App: React.FC = () => {
         <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-sans">
             <Header onGoHome={handleGoHome} onLogout={handleLogout} isLoggedIn={!!currentUser} userRole={currentUser.role} />
             <main className="container mx-auto p-4 md:p-8">
-                {successMessage && (
-                    <div className="mb-4 p-4 bg-green-100 dark:bg-green-900 border border-green-400 dark:border-green-600 text-green-700 dark:text-green-200 rounded-lg">
-                        {successMessage}
-                    </div>
-                )}
                 {error && view !== 'form' && (
                     <div className="mb-4 p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 rounded-lg">
                         {error}
@@ -325,6 +321,18 @@ const App: React.FC = () => {
                 )}
                 {renderView()}
             </main>
+
+            {/* Success Toast Notification */}
+            {successMessage && (
+                <div className="fixed bottom-8 right-8 z-50 max-w-md w-auto" role="status" aria-live="polite">
+                    <div className="bg-emerald-500 text-white font-bold rounded-lg shadow-xl p-4 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>{successMessage}</span>
+                    </div>
+                </div>
+            )}
 
             {/* Delete Confirmation Modal */}
             {clientToDelete && currentUser.role === 'admin' && (

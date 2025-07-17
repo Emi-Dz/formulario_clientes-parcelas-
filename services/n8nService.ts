@@ -1,4 +1,3 @@
-
 import { SaleData, PaymentSystem, UserWithPassword } from '../types';
 
 /**
@@ -180,10 +179,8 @@ export const fetchClientsFromN8n = async (): Promise<SaleData[]> => {
 
 
 /**
- * Sends the complete form data, including files, to the primary n8n webhook.
- * This function constructs a `multipart/form-data` payload. It's carefully
- * constructed to preserve existing file names during an edit, while uploading
- * new files.
+ * Sends the complete form data, including files, to the appropriate n8n webhook.
+ * It uses a different URL for creating a new purchase versus updating an existing one.
  *
  * @param {SaleData} data - The client and sale data object, including ID for edits.
  * @param {{ [key: string]: File }} files - A map of field names to newly uploaded File objects.
@@ -193,17 +190,46 @@ export const sendFormDataToN8n = async (
     data: SaleData, 
     files: { [key: string]: File }
 ): Promise<boolean> => {
-    const N8N_FORM_URL = import.meta.env.VITE_N8N_FORM_WORKFLOW_URL;
+    const isUpdate = data.id && !data.id.startsWith('temp_');
+    const N8N_UPDATE_URL = import.meta.env.VITE_N8N_FORM_WORKFLOW_URL;
+    const N8N_CREATE_URL = import.meta.env.VITE_N8N_NEW_PURCHASE_WORKFLOW_URL;
+    
+    let targetUrl: string | undefined;
 
-    if (!N8N_FORM_URL) {
-        console.error("Configuration error: VITE_N8N_FORM_WORKFLOW_URL not set in .env file.");
-        throw new Error("Configuration error: VITE_N8N_FORM_WORKFLOW_URL is not defined.");
+    if (isUpdate) {
+        targetUrl = N8N_UPDATE_URL;
+        if (!targetUrl) {
+            const errorMsg = "Configuration error: VITE_N8N_FORM_WORKFLOW_URL for updates is not defined.";
+            console.error(errorMsg);
+            throw new Error(errorMsg);
+        }
+    } else {
+        targetUrl = N8N_CREATE_URL;
+        if (!targetUrl) {
+            const errorMsg = "Configuration error: VITE_N8N_NEW_PURCHASE_WORKFLOW_URL for new purchases is not defined.";
+            console.error(errorMsg);
+            throw new Error(errorMsg);
+        }
+    }
+
+    console.log(`[n8nService] Attempting to POST form data to: ${targetUrl}`);
+    const formData = new FormData();
+    
+    // Create a copy to avoid mutating the original data object
+    const dataToSend: any = { ...data };
+
+    // For updates, send the ID as 'row_number', which is what the n8n workflow expects for modifications.
+    if (isUpdate) {
+        formData.append('row_number', data.id);
     }
     
-    console.log(`[n8nService] Attempting to POST form data to: ${N8N_FORM_URL}`);
-    const formData = new FormData();
+    // Always remove the 'id' property from the main data payload before sending.
+    // This prevents the 'id' field (which could be empty or temporary) from confusing
+    // the n8n workflow, ensuring it correctly distinguishes between a CREATE and an UPDATE.
+    delete dataToSend.id;
 
-    Object.entries(data).forEach(([key, value]) => {
+    // Append all other data fields to the FormData object.
+    Object.entries(dataToSend).forEach(([key, value]) => {
          if (value === null || value === undefined) {
             formData.append(key, '');
         } else {
@@ -211,25 +237,22 @@ export const sendFormDataToN8n = async (
         }
     });
     
+    // Append any new files.
     Object.entries(files).forEach(([key, file]) => {
         if(file) {
             formData.set(key, file, file.name);
         }
     });
-    
-    if (data.id && !data.id.startsWith('temp_')) {
-        formData.set('row_number', data.id);
-    }
 
     try {
-        const response = await fetch(N8N_FORM_URL, {
+        const response = await fetch(targetUrl, {
             method: 'POST',
             body: formData,
         });
 
         if (!response.ok) {
             const errorBody = await response.text();
-            console.error(`[n8nService] Form submission failed. Status: ${response.status}. URL: ${N8N_FORM_URL}. Response Body:`, errorBody);
+            console.error(`[n8nService] Form submission failed. Status: ${response.status}. URL: ${targetUrl}. Response Body:`, errorBody);
             return false;
         }
 
@@ -237,7 +260,7 @@ export const sendFormDataToN8n = async (
         return true;
 
     } catch (error) {
-        console.error(`[n8nService] Error sending form data to n8n. URL: ${N8N_FORM_URL}. Error:`, error);
+        console.error(`[n8nService] Error sending form data to n8n. URL: ${targetUrl}. Error:`, error);
         if (error instanceof TypeError) {
              console.error("[n8nService] A network error occurred. Check the connection and CORS settings for the n8n webhook.");
         }
