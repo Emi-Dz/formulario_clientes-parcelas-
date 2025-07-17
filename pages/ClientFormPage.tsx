@@ -1,5 +1,4 @@
 
-
 import React, { useMemo, useEffect } from 'react';
 import { DataEntryForm } from '../components/DataEntryForm';
 import { SaleData, PaymentSystem } from '../types';
@@ -13,11 +12,9 @@ interface ClientFormPageProps {
     isLoading: boolean;
     loadingMessage: string | null;
     error: string | null;
-
     clients: SaleData[];
     fetchClients: () => Promise<void>;
     isFetchingClients: boolean;
-
 }
 
 const emptyFormData: Omit<SaleData, 'id'> = {
@@ -61,21 +58,27 @@ const emptyFormData: Omit<SaleData, 'id'> = {
     notes: '',
 };
 
-
-export const ClientFormPage: React.FC<ClientFormPageProps> = ({ editingClientId, onSave, onCancel, isLoading, loadingMessage, error, clients, fetchClients, isFetchingClients }) => {
-
+export const ClientFormPage: React.FC<ClientFormPageProps> = ({ 
+    editingClientId, 
+    onSave, 
+    onCancel, 
+    isLoading, 
+    loadingMessage, 
+    error,
+    clients,
+    fetchClients,
+    isFetchingClients
+}) => {
     const { t } = useLanguage();
-
     const isEditMode = !!editingClientId;
 
     useEffect(() => {
-        // If we are in "new purchase" mode and the clients array is empty,
-        // it means we navigated here directly from the home page.
-        // We need to fetch the clients to enable the CPF auto-fill feature.
-        if (!isEditMode && clients.length === 0) {
+        // Pre-fetch clients if creating a new entry and the list is not available.
+        // This is used for the pre-submission CPF duplication check.
+        if (!isEditMode && clients.length === 0 && !isFetchingClients) {
             fetchClients();
         }
-    }, [isEditMode, clients, fetchClients]);
+    }, [isEditMode, clients.length, fetchClients, isFetchingClients]);
 
 
     const initialData = useMemo(() => {
@@ -96,9 +99,6 @@ export const ClientFormPage: React.FC<ClientFormPageProps> = ({ editingClientId,
         return { ...emptyFormData, id: '' };
     }, [editingClientId]);
 
-    // The data for the form is only ready once the clients have been fetched in "new" mode
-    const isInitialLoading = !isEditMode && isFetchingClients;
-
     return (
         <div>
              <h1 className="text-3xl font-bold text-slate-800 dark:text-white mb-6">
@@ -113,10 +113,6 @@ export const ClientFormPage: React.FC<ClientFormPageProps> = ({ editingClientId,
                 loadingMessage={loadingMessage}
                 isEditMode={isEditMode}
                 error={error}
-
-                clients={clients}
-                isInitialLoading={isInitialLoading}
-
             />
         </div>
     );
