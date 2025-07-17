@@ -2,7 +2,7 @@
 export const translations: { [key: string]: { [key:string]: string } } = {
     es: {
         // Header
-        appTitle: 'Gestión de Clientes',
+        appTitle: 'Gestión de Compras',
         logout: 'Salir',
 
         // Language Switcher
@@ -18,16 +18,16 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         // Home Page
         welcome: 'Bienvenido',
         welcomeSubtitle: 'Seleccione una opción para comenzar.',
-        home_newClient: 'Cargar Nuevo Cliente',
-        home_viewClients: 'Ver Clientes Existentes',
+        home_newClient: 'Cargar Nueva Compra',
+        home_viewClients: 'Ver Compras',
 
         // Client List Page
-        clientListTitle: 'Lista de Clientes',
-        newButton: 'Cargar Nuevo',
+        clientListTitle: 'Lista de Compras',
+        newButton: 'Cargar Nueva',
         refreshButton: 'Actualizar',
         refreshing: 'Actualizando...',
-        noClients: 'No hay clientes cargados todavía.',
-        noClientsFound: 'No se encontraron clientes.',
+        noClients: 'No hay compras cargadas todavía.',
+        noClientsFound: 'No se encontraron compras.',
         searchPlaceholderCpf: 'Buscar por CPF...',
         colClient: 'Cliente',
         colProduct: 'Producto',
@@ -43,12 +43,12 @@ export const translations: { [key: string]: { [key:string]: string } } = {
 
         // Delete Confirmation
         deleteConfirmTitle: '¿Estás seguro?',
-        deleteConfirmText: 'Esta acción no se puede deshacer. Se eliminará permanentemente al cliente {{clientName}}.',
-        deleteConfirmButton: 'Sí, Borrar Cliente',
+        deleteConfirmText: 'Esta acción no se puede deshacer. Se eliminará permanentemente la compra de {{clientName}}.',
+        deleteConfirmButton: 'Sí, Borrar Compra',
         
         // Form Page Titles
-        formTitleNew: 'Cargar Nuevo Cliente',
-        formTitleEdit: 'Editar Cliente',
+        formTitleNew: 'Cargar Nueva Compra',
+        formTitleEdit: 'Editar Compra',
 
         // Form Section Legends
         clientDetails: 'Detalles del Cliente',
@@ -60,6 +60,7 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         // Form Fields Labels
         sobrenomeENome: 'Apellido y Nombre',
         cpf: 'CPF',
+        searchCpf: 'Buscando CPF...',
         purchaseDate: 'Fecha de Compra',
         telefone: 'Teléfono',
         produtos: 'Productos',
@@ -93,6 +94,7 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         funcionario: 'Funcionario',
         diario: 'Diario',
         semanal: 'Semanal',
+        quincenal: 'Quincenal',
         mensal: 'Mensual',
         paymentStartDate: 'Fecha de Inicio de Pago',
         vendedor: 'Vendedor',
@@ -119,26 +121,26 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         // Form Buttons & Messages
         cancel: 'Cancelar',
         loading: 'Procesando...',
-        loading_clients: 'Cargando clientes...',
+        loading_clients: 'Cargando compras...',
         saveChanges: 'Guardar Cambios',
-        submitNewClient: 'Cargar Cliente',
+        submitNewClient: 'Cargar Compra',
         
         // App Level Messages
-        successUpdate: 'Cliente {{clientName}} actualizado exitosamente!',
-        successNew: 'Nuevo cliente cargado exitosamente!',
-        successDelete: 'Cliente {{clientName}} borrado exitosamente.',
+        successUpdate: 'Compra de {{clientName}} actualizada exitosamente!',
+        successNew: 'Nueva compra cargada exitosamente!',
+        successDelete: 'Compra de {{clientName}} borrada exitosamente.',
         successGenerateSummary: 'Resumen para {{clientName}} generado. La descarga comenzará pronto.',
         errorPrefix: 'Error',
         errorUnknown: 'Ocurrió un error desconocido.',
         error_n8n_form: 'Error al enviar los datos del formulario.',
-        errorFetchClients: 'Error al cargar los clientes',
+        errorFetchClients: 'Error al cargar las compras',
         errorClientExists: 'El cliente con este CPF ya existe.',
-        errorDelete: 'Error al borrar el cliente {{clientName}}.',
+        errorDelete: 'Error al borrar la compra de {{clientName}}.',
         errorGenerateSummary: 'Error al generar el resumen para {{clientName}}.',
     },
     pt: {
         // Header
-        appTitle: 'Gerenciamento de Clientes',
+        appTitle: 'Gerenciamento de Compras',
         logout: 'Sair',
 
         // Language Switcher
@@ -154,16 +156,16 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         // Home Page
         welcome: 'Bem-vindo',
         welcomeSubtitle: 'Selecione uma opção para começar.',
-        home_newClient: 'Carregar Novo Cliente',
-        home_viewClients: 'Ver Clientes Existentes',
+        home_newClient: 'Carregar Nova Compra',
+        home_viewClients: 'Ver Compras',
 
         // Client List Page
-        clientListTitle: 'Lista de Clientes',
-        newButton: 'Carregar Novo',
+        clientListTitle: 'Lista de Compras',
+        newButton: 'Carregar Nova',
         refreshButton: 'Atualizar',
         refreshing: 'Atualizando...',
-        noClients: 'Nenhum cliente carregado ainda.',
-        noClientsFound: 'Nenhum cliente encontrado.',
+        noClients: 'Nenhuma compra carregada ainda.',
+        noClientsFound: 'Nenhuma compra encontrada.',
         searchPlaceholderCpf: 'Buscar por CPF...',
         colClient: 'Cliente',
         colProduct: 'Produto',
@@ -179,12 +181,12 @@ export const translations: { [key: string]: { [key:string]: string } } = {
 
         // Delete Confirmation
         deleteConfirmTitle: 'Você tem certeza?',
-        deleteConfirmText: 'Esta ação não pode ser desfeita. O cliente {{clientName}} será excluído permanentemente.',
-        deleteConfirmButton: 'Sim, Excluir Cliente',
+        deleteConfirmText: 'Esta ação não pode ser desfeita. A compra de {{clientName}} será excluída permanentemente.',
+        deleteConfirmButton: 'Sim, Excluir Compra',
         
         // Form Page Titles
-        formTitleNew: 'Carregar Novo Cliente',
-        formTitleEdit: 'Editar Cliente',
+        formTitleNew: 'Carregar Nova Compra',
+        formTitleEdit: 'Editar Compra',
 
         // Form Section Legends
         clientDetails: 'Detalhes do Cliente',
@@ -196,6 +198,7 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         // Form Fields Labels
         sobrenomeENome: 'Sobrenome e Nome',
         cpf: 'CPF',
+        searchCpf: 'Buscando CPF...',
         purchaseDate: 'Data da Compra',
         telefone: 'Telefone',
         produtos: 'Produtos',
@@ -229,6 +232,7 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         funcionario: 'Funcionário',
         diario: 'Diário',
         semanal: 'Semanal',
+        quincenal: 'Quinzenal',
         mensal: 'Mensal',
         paymentStartDate: 'Data de Início do Pagamento',
         vendedor: 'Vendedor',
@@ -254,21 +258,21 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         // Form Buttons & Messages
         cancel: 'Cancelar',
         loading: 'Processando...',
-        loading_clients: 'Carregando clientes...',
+        loading_clients: 'Carregando compras...',
         saveChanges: 'Salvar Alterações',
-        submitNewClient: 'Carregar Cliente',
+        submitNewClient: 'Carregar Compra',
 
         // App Level Messages
-        successUpdate: 'Cliente {{clientName}} atualizado com sucesso!',
-        successNew: 'Novo cliente carregado com sucesso!',
-        successDelete: 'Cliente {{clientName}} excluído com sucesso.',
+        successUpdate: 'Compra de {{clientName}} atualizada com sucesso!',
+        successNew: 'Nova compra carregada com sucesso!',
+        successDelete: 'Compra de {{clientName}} excluída com sucesso.',
         successGenerateSummary: 'Resumo para {{clientName}} gerado. O download começará em breve.',
         errorPrefix: 'Erro',
         errorUnknown: 'Ocorreu um erro desconhecido.',
         error_n8n_form: 'Erro ao enviar os dados do formulário.',
-        errorFetchClients: 'Erro ao carregar os clientes',
+        errorFetchClients: 'Erro ao carregar as compras',
         errorClientExists: 'O cliente com este CPF já existe.',
-        errorDelete: 'Erro ao excluir o cliente {{clientName}}.',
+        errorDelete: 'Erro ao excluir a compra de {{clientName}}.',
         errorGenerateSummary: 'Erro ao gerar o resumo para {{clientName}}.',
     },
 };
