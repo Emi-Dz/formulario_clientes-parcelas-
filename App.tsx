@@ -105,18 +105,22 @@ const App: React.FC = () => {
         setSuccessMessage(null);
         setLoadingMessage(t('loading'));
         
+        // --- Pre-submission Validation ---
+        // Only perform this check for new entries (when formData.id is falsy)
         if (!formData.id && formData.clientCpf) {
             const normalizeCpf = (cpf: string) => (cpf || '').replace(/\D/g, '');
             const newClientCpf = normalizeCpf(formData.clientCpf);
             
-            // Use the already-fetched client list from state instead of re-fetching
-            const currentClients = clients;
-
             if (newClientCpf) {
-                const clientExists = currentClients.some(client => normalizeCpf(client.clientCpf) === newClientCpf);
-                if (clientExists) {
-                    showError(t('errorClientExists'));
+                // Find if a client with this CPF exists and check their status.
+                // We only need to find one entry to check the status, as it should be consistent for a given CPF.
+                const existingClient = clients.find(client => normalizeCpf(client.clientCpf) === newClientCpf);
+
+                // Block submission only if the client exists AND is marked as "not apt".
+                if (existingClient && existingClient.clientStatus === 'no_apto') {
+                    showError(t('warning_client_not_apt'));
                     setIsLoading(false);
+                    setLoadingMessage(null);
                     return;
                 }
             }
