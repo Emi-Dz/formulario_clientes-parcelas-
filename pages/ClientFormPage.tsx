@@ -57,7 +57,7 @@ const emptyFormData: Omit<SaleData, 'id'> = {
     guarantor: '',
     photoInstagramFileName: '',
     notes: '',
-    clientStatus: 'apto', // Default status for new clients
+    clientStatus: 'no_apto', // Default status for new clients
 };
 
 export const ClientFormPage: React.FC<ClientFormPageProps> = ({ 
