@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { SaleData, PaymentSystem, Language, ClientType } from '../types';
 import { PAYMENT_OPTIONS, CLIENT_TYPE_OPTIONS } from '../constants';
@@ -250,10 +251,10 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
         <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-800 p-4 md:p-6 rounded-xl shadow-lg space-y-6">
             
             <Fieldset legend={t('clientDetails')}>
-                <Input label={t('sobrenomeENome')} id="clientFullName" name="clientFullName" value={formData.clientFullName} onChange={handleChange} placeholder={t('placeholder_clientName')} />
                 <div className="md:col-span-1">
                     <Input label={t('cpf')} id="clientCpf" name="clientCpf" value={formData.clientCpf} onChange={handleChange} placeholder="000.000.000-00"/>
                 </div>
+                <Input label={t('sobrenomeENome')} id="clientFullName" name="clientFullName" value={formData.clientFullName} onChange={handleChange} placeholder={t('placeholder_clientName')} />
                 {isClientNotApt && <NotAptWarning message={t('warning_client_not_apt')} />}
                 
                 <Input label={t('telefone')} id="phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} placeholder={t('placeholder_phone')} wrapperClass="md:col-span-1" />
