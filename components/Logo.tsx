@@ -4,11 +4,11 @@ export const Logo: React.FC = () => (
     <div className="w-full max-w-xs mx-auto mb-4">
         <svg viewBox="0 0 500 250" className="w-full h-auto" aria-labelledby="logo-title">
             <title id="logo-title">Electro Parcelas Logo</title>
-            {/* Blue background rectangle */}
-            <rect width="500" height="250" fill="#0038a8" />
+            {/* Black background */}
+            <rect width="500" height="250" fill="black" />
             
-            {/* Yellow oval outline */}
-            <ellipse cx="250" cy="125" rx="235" ry="110" fill="none" stroke="#fcee21" strokeWidth="8" />
+            {/* Blue oval with yellow outline */}
+            <ellipse cx="250" cy="125" rx="240" ry="120" fill="#0038a8" stroke="#fcee21" strokeWidth="8" />
 
             {/* Text block */}
             <text

@@ -1,5 +1,7 @@
 
 
+
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { SaleData, PaymentSystem, Language, ClientType } from '../types';
 import { PAYMENT_OPTIONS, CLIENT_TYPE_OPTIONS } from '../constants';
@@ -42,6 +44,16 @@ const Fieldset: React.FC<{ legend: string; children: React.ReactNode }> = ({ leg
     </fieldset>
 );
 
+const NotAptWarning = ({ message }: { message: string }) => (
+    <div className="md:col-span-2 flex items-center p-3 mt-1 rounded-md bg-red-100 dark:bg-red-900 border border-red-500 text-red-800 dark:text-red-100">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <p className="font-bold">{message}</p>
+    </div>
+);
+
+
 // --- Main Form Component ---
 
 interface DataEntryFormProps {
@@ -52,13 +64,69 @@ interface DataEntryFormProps {
     loadingMessage: string | null;
     isEditMode: boolean;
     error: string | null;
+    clients: SaleData[];
 }
 
-export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSubmit, onCancel, isLoading, loadingMessage, isEditMode, error }) => {
+export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSubmit, onCancel, isLoading, loadingMessage, isEditMode, error, clients }) => {
     const [formData, setFormData] = useState<SaleData>(initialData);
     const [fileObjects, setFileObjects] = useState<{ [key: string]: File }>({});
+    const [isClientNotApt, setIsClientNotApt] = useState<boolean>(false);
     const { t } = useLanguage();
     const errorRef = useRef<HTMLDivElement>(null);
+
+    const normalizeCpf = (cpf: string) => (cpf || '').replace(/\D/g, '');
+
+    // Check client status and auto-fill data for existing CPF on new forms
+    useEffect(() => {
+        const handleCpfChange = () => {
+            // Auto-filling should only happen on new forms, not when editing an existing client
+            if (isEditMode) return;
+
+            const currentCpf = normalizeCpf(formData.clientCpf);
+            
+            // A full CPF is needed for a reliable search
+            if (currentCpf.length < 11 || clients.length === 0) {
+                setIsClientNotApt(false);
+                // If user is clearing the CPF, we don't clear other fields they might want to keep.
+                return;
+            }
+            
+            // Find the first client record that matches the entered CPF
+            const existingClient = clients.find(c => normalizeCpf(c.clientCpf) === currentCpf);
+
+            if (existingClient) {
+                // If a client is found, update the form with their data
+                setIsClientNotApt(existingClient.clientStatus === 'no_apto');
+                
+                setFormData(prevData => ({
+                    ...prevData, // Keep any data already entered (e.g., product details for this new purchase)
+                    clientFullName: existingClient.clientFullName,
+                    phone: existingClient.phone,
+                    workLocation: existingClient.workLocation,
+                    workAddress: existingClient.workAddress,
+                    homeLocation: existingClient.homeLocation,
+                    homeAddress: existingClient.homeAddress,
+                    reference1Name: existingClient.reference1Name,
+                    reference1Relationship: existingClient.reference1Relationship,
+                    reference2Name: existingClient.reference2Name,
+                    reference2Relationship: existingClient.reference2Relationship,
+                    photoStoreFileName: existingClient.photoStoreFileName,
+                    photoHomeFileName: existingClient.photoHomeFileName,
+                    photoInstagramFileName: existingClient.photoInstagramFileName,
+                    photoIdFrontFileName: existingClient.photoIdFrontFileName,
+                    photoIdBackFileName: existingClient.photoIdBackFileName,
+                    photoCpfFileName: existingClient.photoCpfFileName,
+                    // We don't copy purchase-specific data like product, price, etc.
+                }));
+            } else {
+                // If no client is found, just ensure the "not apt" warning is hidden.
+                // We don't clear fields, as the user might be entering a new client.
+                setIsClientNotApt(false);
+            }
+        };
+        handleCpfChange();
+    }, [formData.clientCpf, clients, isEditMode]);
+
 
     const calculateInstallmentPrice = useCallback(() => {
         const total = parseFloat(String(formData.totalProductPrice)) || 0;
@@ -78,7 +146,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
         }
     }, [error]);
 
-    const formatCpf = (value: string) => {
+    const formatCpfInput = (value: string) => {
         const onlyNumbers = value.replace(/\D/g, '');
         return onlyNumbers
             .slice(0, 11)
@@ -91,7 +159,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
         const { name, value } = e.target;
         
         if (name === 'clientCpf') {
-             setFormData(prev => ({ ...prev, [name]: formatCpf(value) }));
+             setFormData(prev => ({ ...prev, [name]: formatCpfInput(value) }));
              return;
         }
 
@@ -113,9 +181,6 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
             // Update formData to reflect the new file name immediately
             const updatedFormData = { ...formData, [name]: file.name };
             
-            // Create a new object for files to send to n8n
-            const filesToSubmit = { ...fileObjects, [name]: file };
-
             setFormData(updatedFormData);
         }
     };
@@ -186,10 +251,14 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
         <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-800 p-4 md:p-6 rounded-xl shadow-lg space-y-6">
             
             <Fieldset legend={t('clientDetails')}>
+                <div className="md:col-span-1">
+                    <Input label={t('cpf')} id="clientCpf" name="clientCpf" value={formData.clientCpf} onChange={handleChange} placeholder="000.000.000-00"/>
+                </div>
                 <Input label={t('sobrenomeENome')} id="clientFullName" name="clientFullName" value={formData.clientFullName} onChange={handleChange} placeholder={t('placeholder_clientName')} />
-                <Input label={t('cpf')} id="clientCpf" name="clientCpf" value={formData.clientCpf} onChange={handleChange} placeholder="000.000.000-00"/>
-                <Input label={t('telefone')} id="phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} placeholder={t('placeholder_phone')} />
-                <Input label={t('purchaseDate')} id="purchaseDate" name="purchaseDate" type="date" value={formData.purchaseDate} onChange={handleChange} />
+                {isClientNotApt && <NotAptWarning message={t('warning_client_not_apt')} />}
+                
+                <Input label={t('telefone')} id="phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} placeholder={t('placeholder_phone')} wrapperClass="md:col-span-1" />
+                <Input label={t('purchaseDate')} id="purchaseDate" name="purchaseDate" type="date" value={formData.purchaseDate} onChange={handleChange} wrapperClass="md:col-span-1" />
             </Fieldset>
             
             <Fieldset legend={t('saleDetails')}>

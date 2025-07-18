@@ -1,4 +1,5 @@
 
+
 import React, { useMemo, useEffect } from 'react';
 import { DataEntryForm } from '../components/DataEntryForm';
 import { SaleData, PaymentSystem } from '../types';
@@ -56,6 +57,7 @@ const emptyFormData: Omit<SaleData, 'id'> = {
     guarantor: '',
     photoInstagramFileName: '',
     notes: '',
+    clientStatus: 'no_apto', // Default status for new clients
 };
 
 export const ClientFormPage: React.FC<ClientFormPageProps> = ({ 
@@ -74,11 +76,11 @@ export const ClientFormPage: React.FC<ClientFormPageProps> = ({
 
     useEffect(() => {
         // Pre-fetch clients if creating a new entry and the list is not available.
-        // This is used for the pre-submission CPF duplication check.
-        if (!isEditMode && clients.length === 0 && !isFetchingClients) {
+        // This is used for the pre-submission CPF duplication and status check.
+        if (clients.length === 0 && !isFetchingClients) {
             fetchClients();
         }
-    }, [isEditMode, clients.length, fetchClients, isFetchingClients]);
+    }, [clients.length, fetchClients, isFetchingClients]);
 
 
     const initialData = useMemo(() => {
@@ -113,6 +115,7 @@ export const ClientFormPage: React.FC<ClientFormPageProps> = ({
                 loadingMessage={loadingMessage}
                 isEditMode={isEditMode}
                 error={error}
+                clients={clients}
             />
         </div>
     );
