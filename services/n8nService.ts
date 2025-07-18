@@ -122,7 +122,7 @@ export const fetchClientsFromN8n = async (): Promise<SaleData[]> => {
              if (!rawClient || typeof rawClient !== 'object') return null;
             const paymentSystemValue = (rawClient['Sisteme de pago'] || rawClient['Sistema de pago'] || PaymentSystem.MENSAL).toUpperCase();
             
-            const statusValue = (rawClient.clientStatus || rawClient.status || 'apto').toLowerCase();
+            const statusValue = (rawClient.clientStatus || rawClient.status || rawClient['Estado'] || 'apto').toLowerCase();
 
             return {
                 id: String(rawClient.row_number || `temp_${Date.now()}_${Math.random()}`),
