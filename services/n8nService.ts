@@ -119,10 +119,21 @@ export const fetchClientsFromN8n = async (): Promise<SaleData[]> => {
         }
 
         const mappedClients: SaleData[] = clientListRaw.map((rawClient: any) => {
-             if (!rawClient || typeof rawClient !== 'object') return null;
+            if (!rawClient || typeof rawClient !== 'object') return null;
             const paymentSystemValue = (rawClient['Sisteme de pago'] || rawClient['Sistema de pago'] || PaymentSystem.MENSAL).toUpperCase();
             
-            const statusValue = (rawClient.clientStatus || rawClient.status || rawClient['Estado'] || 'apto').toLowerCase();
+            // --- Robust Status Handling ---
+            const rawStatusString = 
+                rawClient['Estado Cliente'] ||  // From user feedback
+                rawClient.clientStatus ||       // Key from app's own data model
+                rawClient.status ||             // Common key, lowercase
+                rawClient.Status ||             // Common key, capitalized
+                rawClient['Estado'] ||          // Spanish key, capitalized
+                rawClient['estado'] ||          // Spanish key, lowercase
+                'apto';                         // Default to 'apto' if nothing is found
+
+            const normalizedStatus = String(rawStatusString).toLowerCase().trim();
+            // --- End Status Handling ---
 
             return {
                 id: String(rawClient.row_number || `temp_${Date.now()}_${Math.random()}`),
@@ -168,7 +179,7 @@ export const fetchClientsFromN8n = async (): Promise<SaleData[]> => {
                 vendedor: rawClient['Vendedor'] || '',
                 guarantor: rawClient['Garante'] || '',
                 notes: rawClient['Observaciones'] || '',
-                clientStatus: statusValue === 'no_apto' ? 'no_apto' : 'apto',
+                clientStatus: (normalizedStatus === 'no_apto' || normalizedStatus === 'no apto') ? 'no_apto' : 'apto',
             };
         }).filter((client): client is SaleData => client !== null);
 
