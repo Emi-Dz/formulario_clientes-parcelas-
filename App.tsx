@@ -248,25 +248,37 @@ const App: React.FC = () => {
         }
     };
 
-    const handleUpdateClientStatus = async (client: SaleData, newStatus: ClientStatus) => {
-        if (currentUser?.role !== 'admin' || !client.clientCpf) return;
+    const handleUpdateClientStatus = async (clientToUpdate: SaleData, newStatus: ClientStatus) => {
+        if (currentUser?.role !== 'admin' || !clientToUpdate.clientCpf) return;
         
-        setIsUpdatingStatusId(client.id);
+        setIsUpdatingStatusId(clientToUpdate.id);
         setError(null);
         setSuccessMessage(null);
 
         try {
-            const success = await n8nService.updateClientStatusInN8n(client.clientCpf, newStatus);
+            const success = await n8nService.updateClientStatusInN8n(clientToUpdate.clientCpf, newStatus);
             if (success) {
-                await fetchClients(); // Refresh data to show updated status everywhere
+                // Update state locally for immediate feedback to avoid race conditions with fetching.
+                // Since the backend updates all records for a given CPF, we mimic that behavior here.
+                setClients(prevClients => {
+                    const updatedClients = prevClients.map(c => {
+                        if (c.clientCpf && c.clientCpf === clientToUpdate.clientCpf) {
+                            return { ...c, clientStatus: newStatus };
+                        }
+                        return c;
+                    });
+                    clientStore.setClients(updatedClients); // Also update the cache
+                    return updatedClients;
+                });
+
                 const statusText = newStatus === 'apto' ? t('status_apto') : t('status_no_apto');
-                showSuccess(t('successStatusUpdate', { clientName: client.clientFullName, status: statusText }));
+                showSuccess(t('successStatusUpdate', { clientName: clientToUpdate.clientFullName, status: statusText }));
             } else {
-                showError(t('errorStatusUpdate', { clientName: client.clientFullName }));
+                showError(t('errorStatusUpdate', { clientName: clientToUpdate.clientFullName }));
             }
         } catch (err) {
              const errorMessage = err instanceof Error ? err.message : t('errorUnknown');
-            showError(`${t('errorStatusUpdate', { clientName: client.clientFullName })}: ${errorMessage}`);
+            showError(`${t('errorStatusUpdate', { clientName: clientToUpdate.clientFullName })}: ${errorMessage}`);
         } finally {
              setIsUpdatingStatusId(null);
         }
