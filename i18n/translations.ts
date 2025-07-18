@@ -66,7 +66,7 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         photos: 'Fotos',
         
         // Form Fields Labels
-        sobrenomeENome: 'Apellido y Nombre',
+        sobrenomeENome: 'Nombre y Apellido',
         cpf: 'CPF',
         purchaseDate: 'Fecha de Compra',
         telefone: 'Teléfono',
@@ -215,7 +215,7 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         photos: 'Fotos',
 
         // Form Fields Labels
-        sobrenomeENome: 'Sobrenome e Nome',
+        sobrenomeENome: 'Nome e Sobrenome',
         cpf: 'CPF',
         purchaseDate: 'Data da Compra',
         telefone: 'Telefone',
