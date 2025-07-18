@@ -1,7 +1,6 @@
 
 
 
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { SaleData, PaymentSystem, Language, ClientType } from '../types';
 import { PAYMENT_OPTIONS, CLIENT_TYPE_OPTIONS } from '../constants';
@@ -116,6 +115,10 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
                     photoIdFrontFileName: existingClient.photoIdFrontFileName,
                     photoIdBackFileName: existingClient.photoIdBackFileName,
                     photoCpfFileName: existingClient.photoCpfFileName,
+                    storeName: existingClient.storeName,
+                    guarantor: existingClient.guarantor,
+                    clientType: existingClient.clientType,
+                    language: existingClient.language,
                     // We don't copy purchase-specific data like product, price, etc.
                 }));
             } else {
