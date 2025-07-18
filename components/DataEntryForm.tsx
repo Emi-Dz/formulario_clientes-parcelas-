@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { SaleData, PaymentSystem, Language, ClientType } from '../types';
 import { PAYMENT_OPTIONS, CLIENT_TYPE_OPTIONS } from '../constants';
@@ -74,29 +75,56 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
 
     const normalizeCpf = (cpf: string) => (cpf || '').replace(/\D/g, '');
 
-    // Check client status when CPF changes
+    // Check client status and auto-fill data for existing CPF on new forms
     useEffect(() => {
-        const checkClientStatus = () => {
-            if (!formData.clientCpf || clients.length === 0) {
-                setIsClientNotApt(false);
-                return;
-            }
+        const handleCpfChange = () => {
+            // Auto-filling should only happen on new forms, not when editing an existing client
+            if (isEditMode) return;
+
             const currentCpf = normalizeCpf(formData.clientCpf);
-            if (currentCpf.length < 11) {
+            
+            // A full CPF is needed for a reliable search
+            if (currentCpf.length < 11 || clients.length === 0) {
                 setIsClientNotApt(false);
+                // If user is clearing the CPF, we don't clear other fields they might want to keep.
                 return;
             }
             
+            // Find the first client record that matches the entered CPF
             const existingClient = clients.find(c => normalizeCpf(c.clientCpf) === currentCpf);
 
-            if (existingClient && existingClient.clientStatus === 'no_apto') {
-                setIsClientNotApt(true);
+            if (existingClient) {
+                // If a client is found, update the form with their data
+                setIsClientNotApt(existingClient.clientStatus === 'no_apto');
+                
+                setFormData(prevData => ({
+                    ...prevData, // Keep any data already entered (e.g., product details for this new purchase)
+                    clientFullName: existingClient.clientFullName,
+                    phone: existingClient.phone,
+                    workLocation: existingClient.workLocation,
+                    workAddress: existingClient.workAddress,
+                    homeLocation: existingClient.homeLocation,
+                    homeAddress: existingClient.homeAddress,
+                    reference1Name: existingClient.reference1Name,
+                    reference1Relationship: existingClient.reference1Relationship,
+                    reference2Name: existingClient.reference2Name,
+                    reference2Relationship: existingClient.reference2Relationship,
+                    photoStoreFileName: existingClient.photoStoreFileName,
+                    photoHomeFileName: existingClient.photoHomeFileName,
+                    photoInstagramFileName: existingClient.photoInstagramFileName,
+                    photoIdFrontFileName: existingClient.photoIdFrontFileName,
+                    photoIdBackFileName: existingClient.photoIdBackFileName,
+                    photoCpfFileName: existingClient.photoCpfFileName,
+                    // We don't copy purchase-specific data like product, price, etc.
+                }));
             } else {
+                // If no client is found, just ensure the "not apt" warning is hidden.
+                // We don't clear fields, as the user might be entering a new client.
                 setIsClientNotApt(false);
             }
         };
-        checkClientStatus();
-    }, [formData.clientCpf, clients]);
+        handleCpfChange();
+    }, [formData.clientCpf, clients, isEditMode]);
 
 
     const calculateInstallmentPrice = useCallback(() => {
