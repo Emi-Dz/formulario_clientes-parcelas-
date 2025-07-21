@@ -4,7 +4,7 @@ import { Header } from './components/Header';
 import { SaleData, AuthUser, ClientStatus } from './types';
 import * as n8nService from './services/n8nService';
 import * as clientStore from './services/clientStore';
-import { ClientListPage } from './pages/ClientListPage';
+import ClientListPage from './pages/ClientListPage';
 import { ClientFormPage } from './pages/ClientFormPage';
 import { useLanguage } from './context/LanguageContext';
 import { LoginPage } from './pages/LoginPage';
