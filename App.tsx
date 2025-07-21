@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { Header } from './components/Header';
 import { SaleData, AuthUser, ClientStatus } from './types';
@@ -59,7 +56,7 @@ const App: React.FC = () => {
     }, [t]);
 
     useEffect(() => {
-        if (currentUser?.role === 'admin') {
+        if (currentUser) {
             fetchClients();
         }
         if(currentUser) {
@@ -107,17 +104,13 @@ const App: React.FC = () => {
         setLoadingMessage(t('loading'));
         
         // --- Pre-submission Validation ---
-        // Only perform this check for new entries (when formData.id is falsy)
         if (!formData.id && formData.clientCpf) {
             const normalizeCpf = (cpf: string) => (cpf || '').replace(/\D/g, '');
             const newClientCpf = normalizeCpf(formData.clientCpf);
             
             if (newClientCpf) {
-                // Find if a client with this CPF exists and check their status.
-                // We only need to find one entry to check the status, as it should be consistent for a given CPF.
                 const existingClient = clients.find(client => normalizeCpf(client.clientCpf) === newClientCpf);
 
-                // Block submission only if the client exists AND is marked as "not apt".
                 if (existingClient && existingClient.clientStatus === 'no_apto') {
                     showError(t('warning_client_not_apt'));
                     setIsLoading(false);
@@ -135,14 +128,14 @@ const App: React.FC = () => {
                 const successMsg = formData.id ? t('successUpdate', { clientName: formData.clientFullName }) : t('successNew');
                 showSuccess(successMsg);
                 
-                // Always refresh the client list after any save operation to keep data fresh.
+                // Per the user's request, after a successful save, we will ALWAYS
+                // refresh the client list from the server. This ensures that when the next
+                // screen is shown, it has the most up-to-date data available to prevent duplicates.
                 await fetchClients();
 
                 if (currentUser?.role === 'admin') {
                     setView('list');
                 } else {
-                    // For sellers, after saving and refreshing the data,
-                    // present them with a fresh form for the next entry.
                     handleGoToNewForm();
                 }
             } else {
@@ -267,18 +260,9 @@ const App: React.FC = () => {
         try {
             const success = await n8nService.updateClientStatusInN8n(clientToUpdate.clientCpf, newStatus);
             if (success) {
-                // Update state locally for immediate feedback to avoid race conditions with fetching.
-                // Since the backend updates all records for a given CPF, we mimic that behavior here.
-                setClients(prevClients => {
-                    const updatedClients = prevClients.map(c => {
-                        if (c.clientCpf && c.clientCpf === clientToUpdate.clientCpf) {
-                            return { ...c, clientStatus: newStatus };
-                        }
-                        return c;
-                    });
-                    clientStore.setClients(updatedClients); // Also update the cache
-                    return updatedClients;
-                });
+                // To avoid race conditions, we'll immediately refetch the entire list
+                // which is the most reliable way to reflect the change that affects all of a client's records.
+                await fetchClients();
 
                 const statusText = newStatus === 'apto' ? t('status_apto') : t('status_no_apto');
                 showSuccess(t('successStatusUpdate', { clientName: clientToUpdate.clientFullName, status: statusText }));
