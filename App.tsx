@@ -1,5 +1,4 @@
 
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { Header } from './components/Header';
 import { SaleData, AuthUser, ClientStatus } from './types';
@@ -14,6 +13,7 @@ import { generateExcel } from './services/excelGenerator';
 type View = 'list' | 'form';
 
 const AUTH_KEY = 'client-app-user';
+const SUCCESS_MESSAGE_KEY = 'client-app-success-message';
 
 const App: React.FC = () => {
     const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
@@ -41,6 +41,16 @@ const App: React.FC = () => {
     const [isGeneratingSummaryId, setIsGeneratingSummaryId] = useState<string | null>(null);
     const [isUpdatingStatusId, setIsUpdatingStatusId] = useState<string | null>(null);
 
+    const showSuccess = useCallback((message: string) => {
+        setSuccessMessage(message);
+        setTimeout(() => setSuccessMessage(null), 5000);
+    }, []);
+
+    const showError = useCallback((message: string) => {
+        setError(message);
+        setTimeout(() => setError(null), 8000);
+    }, []);
+
     const fetchClients = useCallback(async () => {
         setIsFetchingClients(true);
         try {
@@ -55,10 +65,19 @@ const App: React.FC = () => {
         } finally {
             setIsFetchingClients(false);
         }
-    }, [t]);
+    }, [t, showError]);
+
+    // On mount, check for a success message from a page reload
+    useEffect(() => {
+        const storedSuccessMessage = sessionStorage.getItem(SUCCESS_MESSAGE_KEY);
+        if (storedSuccessMessage) {
+            showSuccess(storedSuccessMessage);
+            sessionStorage.removeItem(SUCCESS_MESSAGE_KEY);
+        }
+    }, [showSuccess]);
 
     useEffect(() => {
-        if (currentUser?.role === 'admin') {
+        if (currentUser) {
             fetchClients();
         }
         if(currentUser) {
@@ -89,34 +108,19 @@ const App: React.FC = () => {
         setFormKey(k => k + 1);
     };
     
-    const showSuccess = (message: string) => {
-        setSuccessMessage(message);
-        setTimeout(() => setSuccessMessage(null), 5000);
-    };
-
-    const showError = (message: string) => {
-        setError(message);
-        setTimeout(() => setError(null), 8000);
-    }
-
     const handleSave = useCallback(async (formData: SaleData, fileObjects: { [key: string]: File }) => {
         setIsLoading(true);
         setError(null);
-        setSuccessMessage(null);
         setLoadingMessage(t('loading'));
         
         // --- Pre-submission Validation ---
-        // Only perform this check for new entries (when formData.id is falsy)
         if (!formData.id && formData.clientCpf) {
             const normalizeCpf = (cpf: string) => (cpf || '').replace(/\D/g, '');
             const newClientCpf = normalizeCpf(formData.clientCpf);
             
             if (newClientCpf) {
-                // Find if a client with this CPF exists and check their status.
-                // We only need to find one entry to check the status, as it should be consistent for a given CPF.
                 const existingClient = clients.find(client => normalizeCpf(client.clientCpf) === newClientCpf);
 
-                // Block submission only if the client exists AND is marked as "not apt".
                 if (existingClient && existingClient.clientStatus === 'no_apto') {
                     showError(t('warning_client_not_apt'));
                     setIsLoading(false);
@@ -131,28 +135,50 @@ const App: React.FC = () => {
             const success = await n8nService.sendFormDataToN8n(finalData, fileObjects);
 
             if (success) {
-                const successMsg = formData.id ? t('successUpdate', { clientName: formData.clientFullName }) : t('successNew');
-                showSuccess(successMsg);
-                
-                if (currentUser?.role === 'admin') {
+                const isCreating = !formData.id;
+                const isAdmin = currentUser?.role === 'admin';
+
+                if (isAdmin && isCreating) {
+                    // NEW BEHAVIOR: Admin creating a new purchase gets a delayed refresh.
                     setView('list');
-                    fetchClients();
+                    showSuccess(t('success_new_purchase_processing'));
+
+                    // Show a loading state on the list's refresh button.
+                    setIsFetchingClients(true);
+
+                    setTimeout(() => {
+                        // After 5s, fetch the clients. fetchClients will set isFetchingClients to false.
+                        fetchClients().then(() => {
+                            showSuccess(t('success_list_refreshed'));
+                        }).catch((err) => {
+                            // Handle case where the delayed fetch fails.
+                            const errorMessage = err instanceof Error ? err.message : t('errorUnknown');
+                            showError(`${t('errorFetchClients')}: ${errorMessage}`);
+                        });
+                    }, 5000); // 5-second delay
+
+                    setIsLoading(false); // Hide loading on the (now hidden) form.
+                    setLoadingMessage(null);
                 } else {
-                    handleGoToNewForm(); // Reset to a new form for sellers
+                    // ORIGINAL BEHAVIOR: For updates or for sellers, a page reload is reliable.
+                    const successMsg = formData.id ? t('successUpdate', { clientName: formData.clientFullName }) : t('successNew');
+                    sessionStorage.setItem(SUCCESS_MESSAGE_KEY, successMsg);
+                    window.location.reload();
                 }
             } else {
                  showError(t('error_n8n_form'));
+                 setIsLoading(false);
+                 setLoadingMessage(null);
             }
 
         } catch (err) {
             console.error(err);
             const errorMessage = err instanceof Error ? err.message : t('errorUnknown');
             showError(`${t('errorPrefix')}: ${errorMessage}`);
-        } finally {
             setIsLoading(false);
             setLoadingMessage(null);
         }
-    }, [t, currentUser, fetchClients, clients]);
+    }, [currentUser, t, clients, showError, showSuccess, fetchClients]);
 
     const handleLogin = async (username: string, password: string): Promise<boolean> => {
         setIsLoading(true);
@@ -262,18 +288,9 @@ const App: React.FC = () => {
         try {
             const success = await n8nService.updateClientStatusInN8n(clientToUpdate.clientCpf, newStatus);
             if (success) {
-                // Update state locally for immediate feedback to avoid race conditions with fetching.
-                // Since the backend updates all records for a given CPF, we mimic that behavior here.
-                setClients(prevClients => {
-                    const updatedClients = prevClients.map(c => {
-                        if (c.clientCpf && c.clientCpf === clientToUpdate.clientCpf) {
-                            return { ...c, clientStatus: newStatus };
-                        }
-                        return c;
-                    });
-                    clientStore.setClients(updatedClients); // Also update the cache
-                    return updatedClients;
-                });
+                // To avoid race conditions, we'll immediately refetch the entire list
+                // which is the most reliable way to reflect the change that affects all of a client's records.
+                await fetchClients();
 
                 const statusText = newStatus === 'apto' ? t('status_apto') : t('status_no_apto');
                 showSuccess(t('successStatusUpdate', { clientName: clientToUpdate.clientFullName, status: statusText }));
