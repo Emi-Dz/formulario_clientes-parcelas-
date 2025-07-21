@@ -84,6 +84,12 @@ const App: React.FC = () => {
             setView(currentUser.role === 'admin' ? 'list' : 'form');
         }
     }, [currentUser, fetchClients]);
+    
+    const handleGoToNewForm = useCallback(() => {
+        setEditingClientId(null);
+        setView('form');
+        setFormKey(k => k + 1); // Force re-mount of form component for a clean state
+    }, []);
 
     const handleGoHome = () => {
         if (!currentUser) return;
@@ -95,12 +101,6 @@ const App: React.FC = () => {
         }
     };
     
-    const handleGoToNewForm = () => {
-        setEditingClientId(null);
-        setView('form');
-        setFormKey(k => k + 1); // Force re-mount of form component for a clean state
-    };
-
     const handleGoToEditForm = (id: string) => {
         if (currentUser?.role !== 'admin') return;
         setEditingClientId(id);
@@ -135,14 +135,22 @@ const App: React.FC = () => {
             const success = await n8nService.sendFormDataToN8n(finalData, fileObjects);
 
             if (success) {
-                const successMsg = formData.id ? t('successUpdate', { clientName: formData.clientFullName }) : t('successNew');
+                const isUpdate = !!formData.id;
+                const successMsg = isUpdate ? t('successUpdate', { clientName: formData.clientFullName }) : t('successNew');
                 
-                // Store message to show after reload.
-                sessionStorage.setItem(SUCCESS_MESSAGE_KEY, successMsg);
+                if (isUpdate) {
+                    // For updates, the user came from the list and expects to return.
+                    // A full reload is the most reliable way to show the updated data.
+                    sessionStorage.setItem(SUCCESS_MESSAGE_KEY, successMsg);
+                    window.location.reload();
 
-                // Force a page reload to get fresh data from the server.
-                // This reliably solves backend data propagation delays.
-                window.location.reload();
+                } else {
+                    // For new creations, redirect both admins and sellers to a fresh form.
+                    // This provides a smooth workflow for multiple entries and avoids
+                    // showing the admin a stale list due to backend propagation delays.
+                    showSuccess(successMsg);
+                    handleGoToNewForm();
+                }
 
             } else {
                  showError(t('error_n8n_form'));
@@ -153,12 +161,11 @@ const App: React.FC = () => {
             const errorMessage = err instanceof Error ? err.message : t('errorUnknown');
             showError(`${t('errorPrefix')}: ${errorMessage}`);
         } finally {
-            // This code may not execute if the page reloads immediately.
-            // The browser will handle stopping scripts and cleaning up.
+            // This will only be reached for the 'new creation' flow, not the reload flow.
             setIsLoading(false);
             setLoadingMessage(null);
         }
-    }, [t, clients, showError]);
+    }, [t, clients, showError, showSuccess, handleGoToNewForm]);
 
     const handleLogin = async (username: string, password: string): Promise<boolean> => {
         setIsLoading(true);
