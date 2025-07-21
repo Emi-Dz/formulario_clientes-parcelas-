@@ -1,27 +1,23 @@
 
-
 import React, { useState, useMemo } from 'react';
 import { SaleData, ClientStatus } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 
-interface ClientListPageProps {
-    clients: SaleData[];
-    onEdit: (id: string) => void;
-    onNew: () => void;
-    onDelete: (id: string, name: string) => void;
-    onGenerateSummary: (id: string) => void;
-    generatingSummaryId: string | null;
-    onRefresh: () => void;
-    isRefreshing: boolean;
-    onUpdateStatus: (client: SaleData, newStatus: ClientStatus) => void;
-    updatingStatusId: string | null;
+// --- Types for Sorting ---
+type SortKey = 'clientCpf' | 'clientFullName' | 'clientStatus';
+type SortDirection = 'ascending' | 'descending';
+interface SortConfig {
+    key: SortKey | null;
+    direction: SortDirection;
 }
 
+// --- Icons ---
 const EditIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z" />
     </svg>
 );
+// ... (other icons remain the same) ...
 
 const DeleteIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -60,29 +56,85 @@ const NewPlusIcon = () => (
     </svg>
 );
 
+// --- Component ---
+interface ClientListPageProps {
+    clients: SaleData[];
+    onEdit: (id: string) => void;
+    onNew: () => void;
+    onDelete: (id: string, name: string) => void;
+    onGenerateSummary: (id: string) => void;
+    generatingSummaryId: string | null;
+    onRefresh: () => void;
+    isRefreshing: boolean;
+    onUpdateStatus: (client: SaleData, newStatus: ClientStatus) => void;
+    updatingStatusId: string | null;
+}
 
 export const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit, onNew, onDelete, onGenerateSummary, generatingSummaryId, onRefresh, isRefreshing, onUpdateStatus, updatingStatusId }) => {
     const { t } = useLanguage();
     const [searchTerm, setSearchTerm] = useState('');
+    const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: 'ascending' });
 
     const normalizeCpf = (cpf: string) => (cpf || '').replace(/\D/g, '');
 
-    const filteredClients = useMemo(() => {
-        if (!searchTerm.trim()) {
-            return clients;
+    const requestSort = (key: SortKey) => {
+        let direction: SortDirection = 'ascending';
+        if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+            direction = 'descending';
         }
-        const normalizedSearchTerm = normalizeCpf(searchTerm);
-        if (!normalizedSearchTerm) return clients;
+        setSortConfig({ key, direction });
+    };
+
+    const sortedAndFilteredClients = useMemo(() => {
+        let filteredItems = [...clients];
+
+        // Filtering
+        if (searchTerm.trim()) {
+            const normalizedSearchTerm = normalizeCpf(searchTerm);
+            if (normalizedSearchTerm) {
+                filteredItems = clients.filter(client =>
+                    normalizeCpf(client.clientCpf).includes(normalizedSearchTerm)
+                );
+            }
+        }
         
-        return clients.filter(client =>
-            normalizeCpf(client.clientCpf).includes(normalizedSearchTerm)
-        );
-    }, [clients, searchTerm]);
+        // Sorting
+        if (sortConfig.key) {
+            filteredItems.sort((a, b) => {
+                const aValue = a[sortConfig.key];
+                const bValue = b[sortConfig.key];
+
+                if (aValue < bValue) {
+                    return sortConfig.direction === 'ascending' ? -1 : 1;
+                }
+                if (aValue > bValue) {
+                    return sortConfig.direction === 'ascending' ? 1 : -1;
+                }
+                return 0;
+            });
+        }
+
+        return filteredItems;
+    }, [clients, searchTerm, sortConfig]);
 
     const handleStatusChange = (client: SaleData) => {
         const newStatus = client.clientStatus === 'apto' ? 'no_apto' : 'apto';
         onUpdateStatus(client, newStatus);
-    }
+    };
+
+    const SortableHeader: React.FC<{ sortKey: SortKey, label: string }> = ({ sortKey, label }) => {
+        const isActive = sortConfig.key === sortKey;
+        return (
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">
+                <button className="flex items-center gap-1 group" onClick={() => requestSort(sortKey)}>
+                    {label}
+                    <span className="opacity-30 group-hover:opacity-100 transition-opacity">
+                        {isActive ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : '↕'}
+                    </span>
+                </button>
+            </th>
+        );
+    };
 
     return (
         <div className="bg-white dark:bg-slate-800 p-6 md:p-8 rounded-xl shadow-lg">
@@ -95,14 +147,7 @@ export const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit,
                         className="flex items-center justify-center px-4 py-2 border border-slate-300 dark:border-slate-500 text-slate-700 dark:text-slate-200 font-semibold rounded-lg shadow-md hover:bg-slate-100 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 min-w-[140px]"
                         title={isRefreshing ? t('refreshing') : t('refreshButton')}
                     >
-                        {isRefreshing ? (
-                            <svg className="animate-spin h-5 w-5 mr-1.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                        ) : (
-                            <RefreshIcon />
-                        )}
+                        {isRefreshing ? <LoadingSpinnerIcon /> : <RefreshIcon />}
                         <span>{isRefreshing ? t('refreshing') : t('refreshButton')}</span>
                     </button>
                     <button
@@ -126,7 +171,7 @@ export const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit,
                 />
             </div>
 
-            {clients.length > 0 && filteredClients.length === 0 ? (
+            {clients.length > 0 && sortedAndFilteredClients.length === 0 ? (
                  <p className="text-center text-slate-500 dark:text-slate-400 py-8">
                     {t('noClientsFound')}
                 </p>
@@ -139,38 +184,41 @@ export const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit,
                     <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
                         <thead className="bg-slate-50 dark:bg-slate-700">
                             <tr>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">{t('colCpf')}</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">{t('sobrenomeENome')}</th>
+                                <SortableHeader sortKey="clientCpf" label={t('colCpf')} />
+                                <SortableHeader sortKey="clientFullName" label={t('sobrenomeENome')} />
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">{t('colProduct')}</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">{t('colTotal')}</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">{t('colPaymentSystem')}</th>
+                                <SortableHeader sortKey="clientStatus" label={t('status')} />
                                 <th scope="col" className="relative px-6 py-3 text-right">
                                     <span className="text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">{t('actions')}</span>
                                 </th>
                             </tr>
                         </thead>
                         <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
-                            {filteredClients.map((client) => (
+                            {sortedAndFilteredClients.map((client) => (
                                 <tr key={client.id} className={`${client.clientStatus === 'no_apto' ? 'bg-red-50 dark:bg-red-900/20' : ''} hover:bg-slate-50 dark:hover:bg-slate-700/50`}>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
                                         {client.clientCpf}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex items-center">
-                                            <span className="text-sm font-medium text-slate-900 dark:text-white">{client.clientFullName}</span>
-                                            {client.clientStatus === 'no_apto' && (
-                                                <span className="ml-2 px-2 py-0.5 text-xs font-semibold text-red-800 bg-red-200 dark:bg-red-800 dark:text-red-100 rounded-full">{t('status_no_apto')}</span>
-                                            )}
-                                        </div>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">
+                                        {client.clientFullName}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm text-slate-900 dark:text-slate-300">{client.product}</div>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-300">
+                                        {client.product}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-800 dark:text-slate-200">
                                         R$ {(client.totalProductPrice ?? 0).toFixed(2)}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
                                         {t(client.paymentSystem?.toLowerCase() ?? '')}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        {client.clientStatus === 'apto' ? (
+                                            <span className="px-2 py-1 text-xs font-semibold leading-5 text-green-800 bg-green-100 rounded-full dark:bg-green-800 dark:text-green-100">{t('status_apto')}</span>
+                                        ) : (
+                                            <span className="px-2 py-1 text-xs font-semibold leading-5 text-red-800 bg-red-100 rounded-full dark:bg-red-800 dark:text-red-100">{t('status_no_apto')}</span>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <div className="flex items-center justify-end gap-1 sm:gap-2">
