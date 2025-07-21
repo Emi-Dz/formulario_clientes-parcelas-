@@ -116,6 +116,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
                     photoIdFrontFileName: existingClient.photoIdFrontFileName,
                     photoIdBackFileName: existingClient.photoIdBackFileName,
                     photoCpfFileName: existingClient.photoCpfFileName,
+                    photoFaceFileName: existingClient.photoFaceFileName,
                     // We don't copy purchase-specific data like product, price, etc.
                 }));
             } else {
@@ -307,6 +308,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
                 <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {singleUploadButton('fotoLoja', 'photoStoreFileName')}
                     {singleUploadButton('fotoCasa', 'photoHomeFileName')}
+                    {singleUploadButton('fotoCara', 'photoFaceFileName')}
                     {singleUploadButton('fotoCodigoTelefono', 'photoPhoneCodeFileName')}
                     {singleUploadButton('instagramFace', 'photoInstagramFileName')}
                     {twoSidedUpload('fotoContrato', 'photoContractFrontFileName', 'photoContractBackFileName')}
