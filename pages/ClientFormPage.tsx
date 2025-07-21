@@ -1,5 +1,4 @@
 
-
 import React, { useMemo, useEffect } from 'react';
 import { DataEntryForm } from '../components/DataEntryForm';
 import { SaleData, PaymentSystem } from '../types';
@@ -86,21 +85,52 @@ export const ClientFormPage: React.FC<ClientFormPageProps> = ({
 
     const initialData = useMemo(() => {
         if (editingClientId) {
-            const clientData = clientStore.getClient(editingClientId) as any; // Use any for easier migration
-            if (clientData) {
-                // Gracefully migrate from old `languages` object to new `language` string.
-                const migratedData = { ...clientData };
-                if (clientData.languages && typeof clientData.languages === 'object') {
-                    migratedData.language = clientData.languages.pt ? 'pt' : 'es';
-                    delete migratedData.languages;
-                }
-                return { ...emptyFormData, ...migratedData };
+            const clientToEdit = clientStore.getClient(editingClientId);
+            if (!clientToEdit) {
+                 return { ...emptyFormData, id: editingClientId };
             }
-             // If client not found, shouldn't happen but good to handle
-            return { ...emptyFormData, id: editingClientId };
+    
+            // Find all records for this client's CPF to merge photo data
+            const clientCpf = clientToEdit.clientCpf;
+            const allClientRecords = (clientCpf && clients.length > 0)
+                ? clients.filter(c => c.clientCpf && c.clientCpf.replace(/\D/g, '') === clientCpf.replace(/\D/g, ''))
+                : [clientToEdit];
+            
+            // Create a composite object of all available photos from the client's history.
+            // This ensures that if a photo was uploaded in ANY previous purchase, it's found and displayed.
+            const compositePhotoData = allClientRecords.reduce((acc, record) => {
+                acc.photoStoreFileName = acc.photoStoreFileName || record.photoStoreFileName;
+                acc.photoHomeFileName = acc.photoHomeFileName || record.photoHomeFileName;
+                acc.photoInstagramFileName = acc.photoInstagramFileName || record.photoInstagramFileName;
+                acc.photoIdFrontFileName = acc.photoIdFrontFileName || record.photoIdFrontFileName;
+                acc.photoIdBackFileName = acc.photoIdBackFileName || record.photoIdBackFileName;
+                acc.photoCpfFileName = acc.photoCpfFileName || record.photoCpfFileName;
+                acc.photoFaceFileName = acc.photoFaceFileName || record.photoFaceFileName;
+                acc.photoPhoneCodeFileName = acc.photoPhoneCodeFileName || record.photoPhoneCodeFileName;
+                return acc;
+            }, { 
+                photoStoreFileName: '', photoHomeFileName: '', photoInstagramFileName: '',
+                photoIdFrontFileName: '', photoIdBackFileName: '', photoCpfFileName: '',
+                photoFaceFileName: '', photoPhoneCodeFileName: ''
+            });
+    
+            const finalData = { ...emptyFormData, ...clientToEdit, ...compositePhotoData };
+            
+            // Contract photos are specific to a single purchase, so we ensure only the ones
+            // from the record being edited are used, not historical ones.
+            finalData.photoContractFrontFileName = clientToEdit.photoContractFrontFileName;
+            finalData.photoContractBackFileName = clientToEdit.photoContractBackFileName;
+            
+            // Gracefully migrate from old `languages` object to new `language` string.
+            const migratedData = { ...finalData } as any;
+            if (migratedData.languages && typeof migratedData.languages === 'object') {
+                migratedData.language = migratedData.languages.pt ? 'pt' : 'es';
+                delete migratedData.languages;
+            }
+            return migratedData;
         }
         return { ...emptyFormData, id: '' };
-    }, [editingClientId]);
+    }, [editingClientId, clients]);
 
     return (
         <div>
