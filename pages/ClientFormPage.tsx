@@ -50,6 +50,7 @@ const emptyFormData: Omit<SaleData, 'id'> = {
     photoCpfFileName: '',
     photoHomeFileName: '',
     photoPhoneCodeFileName: '',
+    photoFaceFileName: '',
     clientType: '',
     paymentSystem: PaymentSystem.MENSAL,
     paymentStartDate: new Date().toISOString().split('T')[0],
