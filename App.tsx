@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { Header } from './components/Header';
 import { SaleData, AuthUser, ClientStatus } from './types';
@@ -134,11 +135,15 @@ const App: React.FC = () => {
                 const successMsg = formData.id ? t('successUpdate', { clientName: formData.clientFullName }) : t('successNew');
                 showSuccess(successMsg);
                 
+                // Always refresh the client list after any save operation to keep data fresh.
+                await fetchClients();
+
                 if (currentUser?.role === 'admin') {
                     setView('list');
-                    fetchClients();
                 } else {
-                    handleGoToNewForm(); // Reset to a new form for sellers
+                    // For sellers, after saving and refreshing the data,
+                    // present them with a fresh form for the next entry.
+                    handleGoToNewForm();
                 }
             } else {
                  showError(t('error_n8n_form'));
