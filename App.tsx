@@ -84,12 +84,6 @@ const App: React.FC = () => {
             setView(currentUser.role === 'admin' ? 'list' : 'form');
         }
     }, [currentUser, fetchClients]);
-    
-    const handleGoToNewForm = useCallback(() => {
-        setEditingClientId(null);
-        setView('form');
-        setFormKey(k => k + 1); // Force re-mount of form component for a clean state
-    }, []);
 
     const handleGoHome = () => {
         if (!currentUser) return;
@@ -101,6 +95,12 @@ const App: React.FC = () => {
         }
     };
     
+    const handleGoToNewForm = () => {
+        setEditingClientId(null);
+        setView('form');
+        setFormKey(k => k + 1); // Force re-mount of form component for a clean state
+    };
+
     const handleGoToEditForm = (id: string) => {
         if (currentUser?.role !== 'admin') return;
         setEditingClientId(id);
@@ -135,37 +135,50 @@ const App: React.FC = () => {
             const success = await n8nService.sendFormDataToN8n(finalData, fileObjects);
 
             if (success) {
-                const isUpdate = !!formData.id;
-                const successMsg = isUpdate ? t('successUpdate', { clientName: formData.clientFullName }) : t('successNew');
-                
-                if (isUpdate) {
-                    // For updates, the user came from the list and expects to return.
-                    // A full reload is the most reliable way to show the updated data.
+                const isCreating = !formData.id;
+                const isAdmin = currentUser?.role === 'admin';
+
+                if (isAdmin && isCreating) {
+                    // NEW BEHAVIOR: Admin creating a new purchase gets a delayed refresh.
+                    setView('list');
+                    showSuccess(t('success_new_purchase_processing'));
+
+                    // Show a loading state on the list's refresh button.
+                    setIsFetchingClients(true);
+
+                    setTimeout(() => {
+                        // After 5s, fetch the clients. fetchClients will set isFetchingClients to false.
+                        fetchClients().then(() => {
+                            showSuccess(t('success_list_refreshed'));
+                        }).catch((err) => {
+                            // Handle case where the delayed fetch fails.
+                            const errorMessage = err instanceof Error ? err.message : t('errorUnknown');
+                            showError(`${t('errorFetchClients')}: ${errorMessage}`);
+                        });
+                    }, 5000); // 5-second delay
+
+                    setIsLoading(false); // Hide loading on the (now hidden) form.
+                    setLoadingMessage(null);
+                } else {
+                    // ORIGINAL BEHAVIOR: For updates or for sellers, a page reload is reliable.
+                    const successMsg = formData.id ? t('successUpdate', { clientName: formData.clientFullName }) : t('successNew');
                     sessionStorage.setItem(SUCCESS_MESSAGE_KEY, successMsg);
                     window.location.reload();
-
-                } else {
-                    // For new creations, redirect both admins and sellers to a fresh form.
-                    // This provides a smooth workflow for multiple entries and avoids
-                    // showing the admin a stale list due to backend propagation delays.
-                    showSuccess(successMsg);
-                    handleGoToNewForm();
                 }
-
             } else {
                  showError(t('error_n8n_form'));
+                 setIsLoading(false);
+                 setLoadingMessage(null);
             }
 
         } catch (err) {
             console.error(err);
             const errorMessage = err instanceof Error ? err.message : t('errorUnknown');
             showError(`${t('errorPrefix')}: ${errorMessage}`);
-        } finally {
-            // This will only be reached for the 'new creation' flow, not the reload flow.
             setIsLoading(false);
             setLoadingMessage(null);
         }
-    }, [t, clients, showError, showSuccess, handleGoToNewForm]);
+    }, [currentUser, t, clients, showError, showSuccess, fetchClients]);
 
     const handleLogin = async (username: string, password: string): Promise<boolean> => {
         setIsLoading(true);
