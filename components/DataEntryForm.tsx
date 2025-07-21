@@ -117,6 +117,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
                 });
     
                 setFormData(prevData => ({
+
                     ...prevData, // Keep purchase-specific data already entered for this new sale
                     // Overwrite with existing client's data
                     clientFullName: mostRecentRecord.clientFullName,
@@ -134,6 +135,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
                     // Ensure contract photos, which are specific to a new purchase, are NOT carried over.
                     photoContractFrontFileName: '',
                     photoContractBackFileName: '',
+
                 }));
             } else {
                 // If no client is found, just ensure the "not apt" warning is hidden.
