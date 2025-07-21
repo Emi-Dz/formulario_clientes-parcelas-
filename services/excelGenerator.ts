@@ -52,6 +52,7 @@ export const generateExcel = (saleData: SaleData): void => {
         ['ID (Verso)', saleData.photoIdBackFileName ? 'Sí' : 'No'],
         ['CPF', saleData.photoCpfFileName ? 'Sí' : 'No'],
         ['Foto Casa', saleData.photoHomeFileName ? 'Sí' : 'No'],
+        ['Foto de Cara', saleData.photoFaceFileName ? 'Sí' : 'No'],
         ['Foto Código Teléfono', saleData.photoPhoneCodeFileName ? 'Sí' : 'No'],
         [], // Spacer
 
@@ -99,4 +100,3 @@ export const generateExcel = (saleData: SaleData): void => {
     const fileName = `Venta-${saleData.clientFullName.replace(/\s/g, '_')}-${new Date().toISOString().split('T')[0]}.xlsx`;
     XLSX.writeFile(wb, fileName);
 };
-

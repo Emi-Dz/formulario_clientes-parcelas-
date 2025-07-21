@@ -61,6 +61,7 @@ export interface SaleData {
     photoCpfFileName: string;
     photoHomeFileName: string;
     photoPhoneCodeFileName: string;
+    photoFaceFileName: string;
     
     clientType: ClientType;
     paymentSystem: PaymentSystem;

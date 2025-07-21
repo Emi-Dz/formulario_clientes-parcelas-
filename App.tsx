@@ -4,7 +4,7 @@ import { Header } from './components/Header';
 import { SaleData, AuthUser, ClientStatus } from './types';
 import * as n8nService from './services/n8nService';
 import * as clientStore from './services/clientStore';
-import { ClientListPage } from './pages/ClientListPage';
+import ClientListPage from './pages/ClientListPage';
 import { ClientFormPage } from './pages/ClientFormPage';
 import { useLanguage } from './context/LanguageContext';
 import { LoginPage } from './pages/LoginPage';
@@ -147,7 +147,7 @@ const App: React.FC = () => {
                     setIsFetchingClients(true);
 
                     setTimeout(() => {
-                        // After 5s, fetch the clients. fetchClients will set isFetchingClients to false.
+                        // After 40s, fetch the clients. fetchClients will set isFetchingClients to false.
                         fetchClients().then(() => {
                             showSuccess(t('success_list_refreshed'));
                         }).catch((err) => {
@@ -155,7 +155,7 @@ const App: React.FC = () => {
                             const errorMessage = err instanceof Error ? err.message : t('errorUnknown');
                             showError(`${t('errorFetchClients')}: ${errorMessage}`);
                         });
-                    }, 5000); // 5-second delay
+                    }, 40000); // 40-second delay
 
                     setIsLoading(false); // Hide loading on the (now hidden) form.
                     setLoadingMessage(null);
