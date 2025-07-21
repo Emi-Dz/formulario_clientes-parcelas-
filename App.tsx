@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { Header } from './components/Header';
 import { SaleData, AuthUser, ClientStatus } from './types';
@@ -12,6 +13,7 @@ import { generateExcel } from './services/excelGenerator';
 type View = 'list' | 'form';
 
 const AUTH_KEY = 'client-app-user';
+const SUCCESS_MESSAGE_KEY = 'client-app-success-message';
 
 const App: React.FC = () => {
     const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
@@ -39,6 +41,16 @@ const App: React.FC = () => {
     const [isGeneratingSummaryId, setIsGeneratingSummaryId] = useState<string | null>(null);
     const [isUpdatingStatusId, setIsUpdatingStatusId] = useState<string | null>(null);
 
+    const showSuccess = useCallback((message: string) => {
+        setSuccessMessage(message);
+        setTimeout(() => setSuccessMessage(null), 5000);
+    }, []);
+
+    const showError = useCallback((message: string) => {
+        setError(message);
+        setTimeout(() => setError(null), 8000);
+    }, []);
+
     const fetchClients = useCallback(async () => {
         setIsFetchingClients(true);
         try {
@@ -53,7 +65,16 @@ const App: React.FC = () => {
         } finally {
             setIsFetchingClients(false);
         }
-    }, [t]);
+    }, [t, showError]);
+
+    // On mount, check for a success message from a page reload
+    useEffect(() => {
+        const storedSuccessMessage = sessionStorage.getItem(SUCCESS_MESSAGE_KEY);
+        if (storedSuccessMessage) {
+            showSuccess(storedSuccessMessage);
+            sessionStorage.removeItem(SUCCESS_MESSAGE_KEY);
+        }
+    }, [showSuccess]);
 
     useEffect(() => {
         if (currentUser) {
@@ -87,20 +108,9 @@ const App: React.FC = () => {
         setFormKey(k => k + 1);
     };
     
-    const showSuccess = (message: string) => {
-        setSuccessMessage(message);
-        setTimeout(() => setSuccessMessage(null), 5000);
-    };
-
-    const showError = (message: string) => {
-        setError(message);
-        setTimeout(() => setError(null), 8000);
-    }
-
     const handleSave = useCallback(async (formData: SaleData, fileObjects: { [key: string]: File }) => {
         setIsLoading(true);
         setError(null);
-        setSuccessMessage(null);
         setLoadingMessage(t('loading'));
         
         // --- Pre-submission Validation ---
@@ -126,18 +136,14 @@ const App: React.FC = () => {
 
             if (success) {
                 const successMsg = formData.id ? t('successUpdate', { clientName: formData.clientFullName }) : t('successNew');
-                showSuccess(successMsg);
                 
-                // Per the user's request, after a successful save, we will ALWAYS
-                // refresh the client list from the server. This ensures that when the next
-                // screen is shown, it has the most up-to-date data available to prevent duplicates.
-                await fetchClients();
+                // Store message to show after reload.
+                sessionStorage.setItem(SUCCESS_MESSAGE_KEY, successMsg);
 
-                if (currentUser?.role === 'admin') {
-                    setView('list');
-                } else {
-                    handleGoToNewForm();
-                }
+                // Force a page reload to get fresh data from the server.
+                // This reliably solves backend data propagation delays.
+                window.location.reload();
+
             } else {
                  showError(t('error_n8n_form'));
             }
@@ -147,10 +153,12 @@ const App: React.FC = () => {
             const errorMessage = err instanceof Error ? err.message : t('errorUnknown');
             showError(`${t('errorPrefix')}: ${errorMessage}`);
         } finally {
+            // This code may not execute if the page reloads immediately.
+            // The browser will handle stopping scripts and cleaning up.
             setIsLoading(false);
             setLoadingMessage(null);
         }
-    }, [t, currentUser, fetchClients, clients]);
+    }, [t, clients, showError]);
 
     const handleLogin = async (username: string, password: string): Promise<boolean> => {
         setIsLoading(true);
