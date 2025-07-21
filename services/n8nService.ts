@@ -171,7 +171,7 @@ export const fetchClientsFromN8n = async (): Promise<SaleData[]> => {
                 photoCpfFileName: rawClient['Foto CPF'] || '',
                 photoHomeFileName: rawClient['Foto Casa'] || '',
                 photoPhoneCodeFileName: rawClient['Foto Codigo Telefono'] || '',
-                photoFaceFileName: rawClient['Foto de cara'] || rawClient['Foto Cara'] || '',
+                photoFaceFileName: rawClient['Foto de Cara'] || rawClient['Foto de cara'] || rawClient['Foto Cara'] || '',
                 photoInstagramFileName: rawClient['Foto Perfil Instagram'] || '',
                 
                 clientType: rawClient['Tipo cliente'] || '',
