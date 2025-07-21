@@ -224,7 +224,7 @@ const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit, onNew,
                                         <div className="flex items-center justify-end gap-1 sm:gap-2">
                                             <button 
                                                 onClick={() => handleStatusChange(client)}
-                                                disabled={!!updatingStatusId || !client.clientCpf}
+                                                disabled={!!updatingStatusId || !client.clientCpf || isRefreshing}
                                                 className={`inline-flex items-center justify-center p-2 border border-transparent text-sm leading-4 font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed
                                                     ${client.clientStatus === 'no_apto' 
                                                         ? 'text-green-700 bg-green-100 hover:bg-green-200 focus:ring-green-500 dark:bg-green-900/50 dark:text-green-300 dark:hover:bg-green-900' 
@@ -235,16 +235,16 @@ const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit, onNew,
                                             </button>
                                             <button 
                                                 onClick={() => onGenerateSummary(client.id)} 
-                                                disabled={!!generatingSummaryId}
+                                                disabled={!!generatingSummaryId || isRefreshing}
                                                 className="inline-flex items-center justify-center p-2 border border-transparent text-sm leading-4 font-medium rounded-md text-sky-700 bg-sky-100 hover:bg-sky-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 dark:bg-sky-900/50 dark:text-sky-300 dark:hover:bg-sky-900 disabled:opacity-60 disabled:cursor-not-allowed"
                                                 title={t('generateSummaryButton')}
                                             >
                                                 {generatingSummaryId === client.id ? <LoadingSpinnerIcon /> : <SummaryIcon />}
                                             </button>
-                                            <button onClick={() => onEdit(client.id)} className="inline-flex items-center p-2 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-indigo-900/50 dark:text-indigo-300 dark:hover:bg-indigo-900" title={t('editButton')}>
+                                            <button onClick={() => onEdit(client.id)} disabled={isRefreshing} className="inline-flex items-center p-2 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-indigo-900/50 dark:text-indigo-300 dark:hover:bg-indigo-900 disabled:opacity-60 disabled:cursor-not-allowed" title={t('editButton')}>
                                                 <EditIcon />
                                             </button>
-                                            <button onClick={() => onDelete(client.id, client.clientFullName)} className="inline-flex items-center p-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900" title={t('deleteButton')}>
+                                            <button onClick={() => onDelete(client.id, client.clientFullName)} disabled={isRefreshing} className="inline-flex items-center p-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900 disabled:opacity-60 disabled:cursor-not-allowed" title={t('deleteButton')}>
                                                 <DeleteIcon />
                                             </button>
                                         </div>
