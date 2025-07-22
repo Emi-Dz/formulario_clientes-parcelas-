@@ -152,6 +152,10 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         errorStatusUpdate: 'Error al actualizar el estado de {{clientName}}.',
         warning_client_not_apt: 'CLIENTE NO APTO. CONTACTAR AL ADMINISTRADOR.',
 
+        // Sorting
+        sort_by: 'Ordenar por',
+        sort_asc: 'Asc',
+        sort_desc: 'Desc',
     },
     pt: {
         // Header
@@ -303,5 +307,10 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         errorGenerateSummary: 'Erro ao gerar o resumo para {{clientName}}.',
         errorStatusUpdate: 'Erro ao atualizar o status de {{clientName}}.',
         warning_client_not_apt: 'CLIENTE NÃO APTO. ENTRAR EM CONTATO COM O ADMINISTRADOR.',
+        
+        // Sorting
+        sort_by: 'Ordenar por',
+        sort_asc: 'Asc',
+        sort_desc: 'Desc',
     },
 };
