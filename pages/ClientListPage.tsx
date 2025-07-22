@@ -17,39 +17,32 @@ const EditIcon = () => (
         <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z" />
     </svg>
 );
-// ... (other icons remain the same) ...
-
 const DeleteIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
     </svg>
 );
-
 const SummaryIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
     </svg>
 );
-
 const FlagIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6H8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
     </svg>
 );
-
 const LoadingSpinnerIcon = () => (
     <svg className="animate-spin h-5 w-5 mr-1.5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
     </svg>
 );
-
 const RefreshIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
         <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
     </svg>
 );
-
 const NewPlusIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
         <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
@@ -73,7 +66,9 @@ interface ClientListPageProps {
 const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit, onNew, onDelete, onGenerateSummary, generatingSummaryId, onRefresh, isRefreshing, onUpdateStatus, updatingStatusId }) => {
     const { t } = useLanguage();
     const [searchTerm, setSearchTerm] = useState('');
-    const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: 'ascending' });
+    const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'purchaseDate', direction: 'descending' });
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
 
     const normalizeCpf = (cpf: string) => (cpf || '').replace(/\D/g, '');
 
@@ -83,12 +78,12 @@ const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit, onNew,
             direction = 'descending';
         }
         setSortConfig({ key, direction });
+        setCurrentPage(1);
     };
 
-    const sortedAndFilteredClients = useMemo(() => {
+    const processedClients = useMemo(() => {
         let filteredItems = [...clients];
 
-        // Filtering
         if (searchTerm.trim()) {
             const normalizedSearchTerm = normalizeCpf(searchTerm);
             if (normalizedSearchTerm) {
@@ -98,18 +93,13 @@ const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit, onNew,
             }
         }
         
-        // Sorting
         if (sortConfig.key) {
             filteredItems.sort((a, b) => {
-                const aValue = a[sortConfig.key];
-                const bValue = b[sortConfig.key];
+                const aValue = a[sortConfig.key!];
+                const bValue = b[sortConfig.key!];
 
-                if (aValue < bValue) {
-                    return sortConfig.direction === 'ascending' ? -1 : 1;
-                }
-                if (aValue > bValue) {
-                    return sortConfig.direction === 'ascending' ? 1 : -1;
-                }
+                if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
+                if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
                 return 0;
             });
         }
@@ -117,15 +107,32 @@ const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit, onNew,
         return filteredItems;
     }, [clients, searchTerm, sortConfig]);
 
+    const totalPages = Math.ceil(processedClients.length / itemsPerPage);
+    const paginatedClients = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return processedClients.slice(startIndex, startIndex + itemsPerPage);
+    }, [processedClients, currentPage, itemsPerPage]);
+
     const handleStatusChange = (client: SaleData) => {
         const newStatus = client.clientStatus === 'apto' ? 'no_apto' : 'apto';
         onUpdateStatus(client, newStatus);
     };
 
-    const SortableHeader: React.FC<{ sortKey: SortKey, label: string }> = ({ sortKey, label }) => {
+    const handleItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setItemsPerPage(Number(e.target.value));
+        setCurrentPage(1);
+    };
+
+    const handlePageChange = (newPage: number) => {
+        if (newPage >= 1 && newPage <= totalPages) {
+            setCurrentPage(newPage);
+        }
+    };
+
+    const SortableHeader: React.FC<{ sortKey: SortKey, label: string, className?: string }> = ({ sortKey, label, className = '' }) => {
         const isActive = sortConfig.key === sortKey;
         return (
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">
+            <th scope="col" className={`px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider ${className}`}>
                 <button className="flex items-center gap-1 group" onClick={() => requestSort(sortKey)}>
                     {label}
                     <span className="opacity-30 group-hover:opacity-100 transition-opacity">
@@ -165,13 +172,16 @@ const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit, onNew,
                     type="text"
                     placeholder={t('searchPlaceholderCpf')}
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        setCurrentPage(1);
+                    }}
                     className="w-full max-w-sm px-4 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     aria-label={t('searchPlaceholderCpf')}
                 />
             </div>
 
-            {clients.length > 0 && sortedAndFilteredClients.length === 0 ? (
+            {processedClients.length === 0 && searchTerm ? (
                  <p className="text-center text-slate-500 dark:text-slate-400 py-8">
                     {t('noClientsFound')}
                 </p>
@@ -180,12 +190,13 @@ const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit, onNew,
                     {t('noClients')}
                 </p>
             ) : (
+                <>
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
                         <thead className="bg-slate-50 dark:bg-slate-700">
                             <tr>
+                                <SortableHeader sortKey="clientFullName" label={t('sobrenomeENome')} className="sticky left-0 z-10 bg-slate-50 dark:bg-slate-700" />
                                 <SortableHeader sortKey="clientCpf" label={t('colCpf')} />
-                                <SortableHeader sortKey="clientFullName" label={t('sobrenomeENome')} />
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">{t('colProduct')}</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">{t('colTotal')}</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">{t('colPaymentSystem')}</th>
@@ -197,13 +208,13 @@ const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit, onNew,
                             </tr>
                         </thead>
                         <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
-                            {sortedAndFilteredClients.map((client) => (
-                                <tr key={client.id} className={`${client.clientStatus === 'no_apto' ? 'bg-red-50 dark:bg-red-900/20' : ''} hover:bg-slate-50 dark:hover:bg-slate-700/50`}>
+                            {paginatedClients.map((client) => (
+                                <tr key={client.id} className={`group ${client.clientStatus === 'no_apto' ? 'bg-red-50 dark:bg-red-900/20' : ''} hover:bg-slate-50 dark:hover:bg-slate-700/50`}>
+                                    <td className={`sticky left-0 px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white ${client.clientStatus === 'no_apto' ? 'bg-red-50 dark:bg-red-900/30' : 'bg-white dark:bg-slate-800'} group-hover:bg-slate-100 dark:group-hover:bg-slate-700`}>
+                                        {client.clientFullName}
+                                    </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
                                         {client.clientCpf}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">
-                                        {client.clientFullName}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-300">
                                         {client.product}
@@ -258,6 +269,45 @@ const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit, onNew,
                         </tbody>
                     </table>
                 </div>
+
+                <div className="flex flex-col sm:flex-row items-center justify-between pt-4 mt-4 border-t border-slate-200 dark:border-slate-700 gap-4">
+                    <div className="flex items-center gap-2 text-sm">
+                        <label htmlFor="items-per-page" className="text-slate-600 dark:text-slate-300">Items por página:</label>
+                        <select
+                            id="items-per-page"
+                            value={itemsPerPage}
+                            onChange={handleItemsPerPageChange}
+                            className="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 px-2 py-1"
+                        >
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                            <option value="15">15</option>
+                            <option value="20">20</option>
+                        </select>
+                    </div>
+
+                    <div className="text-sm text-slate-700 dark:text-slate-300">
+                        Página <span className="font-semibold">{currentPage}</span> de <span className="font-semibold">{totalPages}</span> ({processedClients.length} resultados)
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                         <button 
+                            onClick={() => handlePageChange(currentPage - 1)} 
+                            disabled={currentPage === 1}
+                            className="px-4 py-2 border border-slate-300 text-sm font-medium rounded-md shadow-sm text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-50 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600 dark:border-slate-600"
+                        >
+                            Anterior
+                        </button>
+                        <button 
+                            onClick={() => handlePageChange(currentPage + 1)} 
+                            disabled={currentPage === totalPages || processedClients.length === 0}
+                            className="px-4 py-2 border border-slate-300 text-sm font-medium rounded-md shadow-sm text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-50 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600 dark:border-slate-600"
+                        >
+                            Siguiente
+                        </button>
+                    </div>
+                </div>
+                </>
             )}
         </div>
     );

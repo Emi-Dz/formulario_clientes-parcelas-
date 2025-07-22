@@ -113,9 +113,11 @@ const App: React.FC = () => {
         setError(null);
         setLoadingMessage(t('loading'));
         
-        // --- Pre-submission Validation ---
-        if (!formData.id && formData.clientCpf) {
-            const normalizeCpf = (cpf: string) => (cpf || '').replace(/\D/g, '');
+        const normalizeCpf = (cpf: string) => (cpf || '').replace(/\D/g, '');
+        const isCreating = !formData.id;
+
+        // --- Pre-submission Validation for new purchases ---
+        if (isCreating && formData.clientCpf) {
             const newClientCpf = normalizeCpf(formData.clientCpf);
             
             if (newClientCpf) {
@@ -135,7 +137,18 @@ const App: React.FC = () => {
             const success = await n8nService.sendFormDataToN8n(finalData, fileObjects);
 
             if (success) {
-                const isCreating = !formData.id;
+                // If a new purchase was just created, immediately mark the client as 'no_apto'.
+                // This prevents further purchases until an admin marks them as 'apto' again.
+                if (isCreating && formData.clientCpf) {
+                    try {
+                        await n8nService.updateClientStatusInN8n(formData.clientCpf, 'no_apto');
+                    } catch (statusUpdateError) {
+                        console.error("Failed to automatically update client status to 'no_apto' after purchase, but the purchase was saved.", statusUpdateError);
+                        // The main operation (saving the purchase) was successful, so we don't block.
+                        // We can show a non-blocking warning here if needed, but for now, just log it.
+                    }
+                }
+                
                 const isUpdating = !!formData.id;
                 const isAdmin = currentUser?.role === 'admin';
 
@@ -294,27 +307,27 @@ const App: React.FC = () => {
     const handleUpdateClientStatus = async (clientToUpdate: SaleData, newStatus: ClientStatus) => {
         if (currentUser?.role !== 'admin' || !clientToUpdate.clientCpf) return;
         
+        const clientCpfToUpdate = clientToUpdate.clientCpf;
+
         setIsUpdatingStatusId(clientToUpdate.id);
         setError(null);
         setSuccessMessage(null);
 
         try {
-            const success = await n8nService.updateClientStatusInN8n(clientToUpdate.clientCpf, newStatus);
+            const success = await n8nService.updateClientStatusInN8n(clientCpfToUpdate, newStatus);
             if (success) {
-                // To avoid race conditions, we'll immediately refetch the entire list
-                // which is the most reliable way to reflect the change that affects all of a client's records.
-                await fetchClients();
-
                 const statusText = newStatus === 'apto' ? t('status_apto') : t('status_no_apto');
-                showSuccess(t('successStatusUpdate', { clientName: clientToUpdate.clientFullName, status: statusText }));
+                const successMsg = t('successStatusUpdate', { clientName: clientToUpdate.clientFullName, status: statusText });
+                sessionStorage.setItem(SUCCESS_MESSAGE_KEY, successMsg);
+                window.location.reload();
             } else {
                 showError(t('errorStatusUpdate', { clientName: clientToUpdate.clientFullName }));
+                setIsUpdatingStatusId(null);
             }
         } catch (err) {
              const errorMessage = err instanceof Error ? err.message : t('errorUnknown');
             showError(`${t('errorStatusUpdate', { clientName: clientToUpdate.clientFullName })}: ${errorMessage}`);
-        } finally {
-             setIsUpdatingStatusId(null);
+            setIsUpdatingStatusId(null);
         }
     };
 
