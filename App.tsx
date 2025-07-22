@@ -136,32 +136,45 @@ const App: React.FC = () => {
 
             if (success) {
                 const isCreating = !formData.id;
+                const isUpdating = !!formData.id;
                 const isAdmin = currentUser?.role === 'admin';
 
                 if (isAdmin && isCreating) {
-                    // NEW BEHAVIOR: Admin creating a new purchase gets a delayed refresh.
+                    // Admin creating new -> 40s delay
                     setView('list');
                     showSuccess(t('success_new_purchase_processing'));
-
-                    // Show a loading state on the list's refresh button.
                     setIsFetchingClients(true);
-
                     setTimeout(() => {
-                        // After 40s, fetch the clients. fetchClients will set isFetchingClients to false.
                         fetchClients().then(() => {
                             showSuccess(t('success_list_refreshed'));
                         }).catch((err) => {
-                            // Handle case where the delayed fetch fails.
                             const errorMessage = err instanceof Error ? err.message : t('errorUnknown');
                             showError(`${t('errorFetchClients')}: ${errorMessage}`);
                         });
-                    }, 40000); // 40-second delay
+                    }, 40000); 
 
-                    setIsLoading(false); // Hide loading on the (now hidden) form.
+                    setIsLoading(false);
                     setLoadingMessage(null);
-                } else {
-                    // ORIGINAL BEHAVIOR: For updates or for sellers, a page reload is reliable.
-                    const successMsg = formData.id ? t('successUpdate', { clientName: formData.clientFullName }) : t('successNew');
+                } else if (isAdmin && isUpdating) {
+                    // Admin updating existing -> 10s delay
+                    setView('list');
+                    showSuccess(t('success_update_processing'));
+                    setIsFetchingClients(true);
+                    setTimeout(() => {
+                        fetchClients().then(() => {
+                            showSuccess(t('success_list_refreshed'));
+                        }).catch((err) => {
+                            const errorMessage = err instanceof Error ? err.message : t('errorUnknown');
+                            showError(`${t('errorFetchClients')}: ${errorMessage}`);
+                        });
+                    }, 10000); // 10-second delay
+
+                    setIsLoading(false);
+                    setLoadingMessage(null);
+                }
+                else {
+                    // Original behavior for sellers.
+                    const successMsg = isCreating ? t('successNew') : t('successUpdate', { clientName: formData.clientFullName });
                     sessionStorage.setItem(SUCCESS_MESSAGE_KEY, successMsg);
                     window.location.reload();
                 }
