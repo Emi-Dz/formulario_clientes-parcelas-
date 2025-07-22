@@ -4,7 +4,7 @@ import { SaleData, ClientStatus } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 
 // --- Types for Sorting ---
-type SortKey = 'clientCpf' | 'clientFullName' | 'clientStatus';
+type SortKey = 'clientCpf' | 'clientFullName' | 'purchaseDate' | 'clientStatus';
 type SortDirection = 'ascending' | 'descending';
 interface SortConfig {
     key: SortKey | null;
@@ -189,6 +189,7 @@ const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit, onNew,
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">{t('colProduct')}</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">{t('colTotal')}</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">{t('colPaymentSystem')}</th>
+                                <SortableHeader sortKey="purchaseDate" label={t('purchaseDate')} />
                                 <SortableHeader sortKey="clientStatus" label={t('status')} />
                                 <th scope="col" className="relative px-6 py-3 text-right">
                                     <span className="text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">{t('actions')}</span>
@@ -212,6 +213,9 @@ const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit, onNew,
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
                                         {t(client.paymentSystem?.toLowerCase() ?? '')}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
+                                        {client.purchaseDate}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         {client.clientStatus === 'apto' ? (

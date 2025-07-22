@@ -134,6 +134,7 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         submitNewClient: 'Cargar Compra',
         
         // App Level Messages
+        success_update_processing: '¡Compra actualizada! La lista se actualizará en 10 segundos...',
         success_new_purchase_processing: '¡Compra enviada! La lista se actualizará en 40 segundos...',
         success_list_refreshed: '¡Lista actualizada!',
         successUpdate: 'Compra de {{clientName}} actualizada exitosamente!',
@@ -285,6 +286,7 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         submitNewClient: 'Carregar Compra',
 
         // App Level Messages
+        success_update_processing: 'Compra atualizada! A lista será atualizada em 10 segundos...',
         success_new_purchase_processing: 'Compra enviada! A lista será atualizada em 40 segundos...',
         success_list_refreshed: 'Lista atualizada!',
         successUpdate: 'Compra de {{clientName}} atualizada com sucesso!',

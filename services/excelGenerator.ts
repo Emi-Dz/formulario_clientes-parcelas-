@@ -2,6 +2,11 @@ import * as XLSX from 'xlsx';
 import { SaleData } from '../types';
 
 export const generateExcel = (saleData: SaleData): void => {
+    // Helper to safely check for a meaningful filename
+    const hasFile = (fileName: string | undefined): string => {
+        return (fileName && fileName.trim()) ? 'Sí' : 'No';
+    };
+
     // --- Main Data (Columns A, B) ---
     const main_data: (string | number | Date | XLSX.CellObject)[][] = [
         // Title
@@ -40,20 +45,20 @@ export const generateExcel = (saleData: SaleData): void => {
         ['Dirección Casa', saleData.homeAddress],
         ['Referencia 1', `${saleData.reference1Name} (${saleData.reference1Relationship})`],
         ['Referencia 2', `${saleData.reference2Name} (${saleData.reference2Relationship})`],
-        ['Foto Perfil Instagram', saleData.photoInstagramFileName ? 'Sí' : 'No'],
+        ['Foto Perfil Instagram', hasFile(saleData.photoInstagramFileName)],
         [], // Spacer
 
         // Photos section
         [{ v: 'Fotos Adjuntas', t: 's', s: { font: { sz: 14, bold: true, color: { rgb: "FFFFFFFF" } }, fill: { fgColor: { rgb: "FF4F46E5" } } } }],
-        ['Foto Tienda', saleData.photoStoreFileName ? 'Sí' : 'No'],
-        ['Contrato (Frente)', saleData.photoContractFrontFileName ? 'Sí' : 'No'],
-        ['Contrato (Verso)', saleData.photoContractBackFileName ? 'Sí' : 'No'],
-        ['ID (Frente)', saleData.photoIdFrontFileName ? 'Sí' : 'No'],
-        ['ID (Verso)', saleData.photoIdBackFileName ? 'Sí' : 'No'],
-        ['CPF', saleData.photoCpfFileName ? 'Sí' : 'No'],
-        ['Foto Casa', saleData.photoHomeFileName ? 'Sí' : 'No'],
-        ['Foto de Cara', saleData.photoFaceFileName ? 'Sí' : 'No'],
-        ['Foto Código Teléfono', saleData.photoPhoneCodeFileName ? 'Sí' : 'No'],
+        ['Foto Tienda', hasFile(saleData.photoStoreFileName)],
+        ['Contrato (Frente)', hasFile(saleData.photoContractFrontFileName)],
+        ['Contrato (Verso)', hasFile(saleData.photoContractBackFileName)],
+        ['ID (Frente)', hasFile(saleData.photoIdFrontFileName)],
+        ['ID (Verso)', hasFile(saleData.photoIdBackFileName)],
+        ['CPF', hasFile(saleData.photoCpfFileName)],
+        ['Foto Casa', hasFile(saleData.photoHomeFileName)],
+        ['Foto de Cara', hasFile(saleData.photoFaceFileName)],
+        ['Foto Código Teléfono', hasFile(saleData.photoPhoneCodeFileName)],
         [], // Spacer
 
         // Notes section

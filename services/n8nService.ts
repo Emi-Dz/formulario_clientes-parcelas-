@@ -1,4 +1,3 @@
-
 import { SaleData, PaymentSystem, UserWithPassword, ClientStatus } from '../types';
 
 /**
@@ -119,6 +118,29 @@ export const fetchClientsFromN8n = async (): Promise<SaleData[]> => {
            clientListRaw = clientListRaw.map((item: any) => item.json);
         }
 
+        const mapDateToYYYYMMDD = (dateStr: string | undefined): string | undefined => {
+            if (!dateStr) return undefined;
+            // Get just the date part, e.g., "20/07/2024" from "20/07/2024, 15:44:33"
+            const datePart = dateStr.split(/[\s,]/)[0];
+            
+            // Check for DD/MM/YYYY format and convert
+            const ddMMyyyy = datePart.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+            if (ddMMyyyy) {
+                const day = ddMMyyyy[1].padStart(2, '0');
+                const month = ddMMyyyy[2].padStart(2, '0');
+                const year = ddMMyyyy[3];
+                return `${year}-${month}-${day}`;
+            }
+
+            // Check if it's already in YYYY-MM-DD format
+            if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+                return datePart;
+            }
+
+            // Return undefined if format is not recognized
+            return undefined;
+        };
+
         const mappedClients: SaleData[] = clientListRaw.map((rawClient: any) => {
             if (!rawClient || typeof rawClient !== 'object') return null;
             const paymentSystemValue = (rawClient['Sisteme de pago'] || rawClient['Sistema de pago'] || PaymentSystem.MENSAL).toUpperCase();
@@ -136,12 +158,22 @@ export const fetchClientsFromN8n = async (): Promise<SaleData[]> => {
             const normalizedStatus = String(rawStatusString).toLowerCase().trim();
             // --- End Status Handling ---
 
+            const today = new Date().toISOString().split('T')[0];
+            
+            // Correctly handle case-sensitivity for the purchase date field.
+            // The backend sends "Fecha de compra", but we check for "Fecha de Compra" as a fallback.
+            const purchaseDateValue = rawClient['Fecha de compra'] || rawClient['Fecha de Compra'];
+            const purchaseDate = mapDateToYYYYMMDD(purchaseDateValue) || today;
+            
+            const paymentStartDate = mapDateToYYYYMMDD(rawClient['Fecha inicio de pago']) || today;
+
+
             return {
                 id: String(rawClient.row_number || `temp_${Date.now()}_${Math.random()}`),
                 timestamp: rawClient['Marca temporal'] || '',
                 clientFullName: rawClient['Nombre y Apellido'] || '',
                 clientCpf: rawClient['CPF Cliente'] || '',
-                purchaseDate: rawClient['Marca temporal']?.split(',')[0] || new Date().toISOString().split('T')[0],
+                purchaseDate: purchaseDate,
                 phone: String(rawClient['Telefono Cliente'] || ''),
                 product: rawClient['Productos'] || '',
                 
@@ -176,7 +208,7 @@ export const fetchClientsFromN8n = async (): Promise<SaleData[]> => {
                 
                 clientType: rawClient['Tipo cliente'] || '',
                 paymentSystem: paymentSystemValue as PaymentSystem,
-                paymentStartDate: rawClient['Fecha inicio de pago'] || '',
+                paymentStartDate: paymentStartDate,
                 
                 vendedor: rawClient['Vendedor'] || '',
                 guarantor: rawClient['Garante'] || '',

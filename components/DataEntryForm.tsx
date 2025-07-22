@@ -117,7 +117,6 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
                 });
     
                 setFormData(prevData => ({
-
                     ...prevData, // Keep purchase-specific data already entered for this new sale
                     // Overwrite with existing client's data
                     clientFullName: mostRecentRecord.clientFullName,
@@ -135,7 +134,6 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
                     // Ensure contract photos, which are specific to a new purchase, are NOT carried over.
                     photoContractFrontFileName: '',
                     photoContractBackFileName: '',
-
                 }));
             } else {
                 // If no client is found, just ensure the "not apt" warning is hidden.
@@ -214,6 +212,27 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
         const fileName = (formData[name] as string) || '';
         return fileName.trim() !== '';
     };
+
+    const handleCancelFile = (name: keyof SaleData) => {
+        // Clear the file from the pending upload queue
+        setFileObjects(prev => {
+            const newFiles = { ...prev };
+            delete newFiles[name];
+            return newFiles;
+        });
+
+        // Clear the file name from the form data to update the UI
+        setFormData(prev => ({
+            ...prev,
+            [name]: '',
+        }));
+
+        // Reset the underlying file input so the user can re-select the same file
+        const inputElement = document.querySelector(`input[name="${name}"]`) as HTMLInputElement;
+        if (inputElement) {
+            inputElement.value = '';
+        }
+    };
     
     const FileUploadDisplay = ({ isPresent, text }: { isPresent: boolean, text: string }) => (
         <>
@@ -238,30 +257,86 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
          <div className="relative p-3 border-2 border-slate-300 dark:border-slate-600 rounded-lg flex flex-col">
             <span className="block text-sm font-medium text-center text-slate-700 dark:text-slate-300 mb-2">{t(titleKey)}</span>
             <div className="grid grid-cols-2 gap-2 mt-auto">
-                <button type="button" className={`${getButtonClass(hasFile(frontName))} p-2 text-sm`}>
-                    <FileUploadDisplay isPresent={hasFile(frontName)} text={t('frente')} />
-                    <input type="file" name={frontName} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} />
-                </button>
-                 <button type="button" className={`${getButtonClass(hasFile(backName))} p-2 text-sm`}>
-                    <FileUploadDisplay isPresent={hasFile(backName)} text={t('verso')} />
-                    <input type="file" name={backName} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} />
-                </button>
+                <div className="relative h-full">
+                    <button type="button" className={`${getButtonClass(hasFile(frontName))} p-2 text-sm w-full h-full`}>
+                        <FileUploadDisplay isPresent={hasFile(frontName)} text={t('frente')} />
+                        <input type="file" name={frontName} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} />
+                    </button>
+                    {hasFile(frontName) && (
+                         <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleCancelFile(frontName); }}
+                            className="absolute -top-1.5 -right-1.5 z-10 p-0.5 bg-red-600 text-white rounded-full shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-1 dark:focus:ring-offset-slate-800 focus:ring-red-500"
+                            aria-label={`Cancelar subida de ${t('frente')}`}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                        </button>
+                    )}
+                </div>
+                <div className="relative h-full">
+                    <button type="button" className={`${getButtonClass(hasFile(backName))} p-2 text-sm w-full h-full`}>
+                        <FileUploadDisplay isPresent={hasFile(backName)} text={t('verso')} />
+                        <input type="file" name={backName} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} />
+                    </button>
+                     {hasFile(backName) && (
+                         <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleCancelFile(backName); }}
+                            className="absolute -top-1.5 -right-1.5 z-10 p-0.5 bg-red-600 text-white rounded-full shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-1 dark:focus:ring-offset-slate-800 focus:ring-red-500"
+                            aria-label={`Cancelar subida de ${t('verso')}`}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                        </button>
+                    )}
+                </div>
             </div>
         </div>
     );
     
     const singleUploadButton = (titleKey: string, name: keyof SaleData) => (
-         <button type="button" className={`${getButtonClass(hasFile(name))} p-3 text-sm`}>
-            <FileUploadDisplay isPresent={hasFile(name)} text={t(titleKey)} />
-            <input type="file" name={name} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} />
-        </button>
+        <div className="relative h-full">
+            <button type="button" className={`${getButtonClass(hasFile(name))} p-3 text-sm w-full h-full`}>
+                <FileUploadDisplay isPresent={hasFile(name)} text={t(titleKey)} />
+                <input type="file" name={name} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} />
+            </button>
+            {hasFile(name) && (
+                <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleCancelFile(name); }}
+                    className="absolute -top-2 -right-2 z-10 p-1 bg-red-600 text-white rounded-full shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-slate-800 focus:ring-red-500"
+                    aria-label={`Cancelar subida de ${t(titleKey)}`}
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                </button>
+            )}
+        </div>
     );
     
     const fileUploadButton = (label: string, name: keyof SaleData) => (
-        <button type="button" className={`${getButtonClass(hasFile(name))} p-2 text-xs`}>
-            <FileUploadDisplay isPresent={hasFile(name)} text={label} />
-            <input type="file" name={name} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} />
-        </button>
+         <div className="relative h-full">
+            <button type="button" className={`${getButtonClass(hasFile(name))} p-2 text-xs w-full h-full`}>
+                <FileUploadDisplay isPresent={hasFile(name)} text={label} />
+                <input type="file" name={name} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} />
+            </button>
+            {hasFile(name) && (
+                 <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleCancelFile(name); }}
+                    className="absolute -top-1.5 -right-1.5 z-10 p-0.5 bg-red-600 text-white rounded-full shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-1 dark:focus:ring-offset-slate-800 focus:ring-red-500"
+                    aria-label={`Cancelar subida de ${label}`}
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                </button>
+            )}
+        </div>
     );
 
 
