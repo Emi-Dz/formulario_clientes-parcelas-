@@ -211,6 +211,33 @@ const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit, onNew,
                 />
             </div>
 
+            {/* Mobile Sorting Controls */}
+            <div className="md:hidden flex flex-col sm:flex-row gap-4 mb-6">
+                <div className="flex-1">
+                    <label htmlFor="sort-key-mobile" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('sort_by')}</label>
+                    <select
+                        id="sort-key-mobile"
+                        value={sortConfig.key ?? ''}
+                        onChange={(e) => requestSort(e.target.value as SortKey)}
+                        className="w-full bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 px-3 py-2"
+                    >
+                        <option value="purchaseDate">{t('purchaseDate')}</option>
+                        <option value="clientFullName">{t('sobrenomeENome')}</option>
+                        <option value="clientCpf">{t('colCpf')}</option>
+                        <option value="clientStatus">{t('status')}</option>
+                    </select>
+                </div>
+                <div className="flex-shrink-0 self-end sm:self-auto">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">&nbsp;</label>
+                    <button
+                        onClick={() => setSortConfig(prev => ({ key: prev.key, direction: prev.direction === 'ascending' ? 'descending' : 'ascending' }))}
+                        className="flex items-center justify-center w-full sm:w-auto h-[42px] px-4 py-2 border border-slate-300 dark:border-slate-500 text-slate-700 dark:text-slate-200 font-semibold rounded-lg shadow-md hover:bg-slate-100 dark:hover:bg-slate-600"
+                    >
+                        <span>{sortConfig.direction === 'ascending' ? `▲ ${t('sort_asc')}` : `▼ ${t('sort_desc')}` }</span>
+                    </button>
+                </div>
+            </div>
+
             {processedClients.length === 0 && searchTerm ? (
                  <p className="text-center text-slate-500 dark:text-slate-400 py-8">
                     {t('noClientsFound')}
@@ -261,7 +288,7 @@ const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit, onNew,
                     <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
                         <thead className="bg-slate-50 dark:bg-slate-700">
                             <tr>
-                                <SortableHeader sortKey="clientFullName" label={t('sobrenomeENome')} className="sticky left-0 z-10 bg-slate-50 dark:bg-slate-700" />
+                                <SortableHeader sortKey="clientFullName" label={t('sobrenomeENome')} />
                                 <SortableHeader sortKey="clientCpf" label={t('colCpf')} />
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">{t('colProduct')}</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">{t('colTotal')}</th>
@@ -276,7 +303,7 @@ const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit, onNew,
                         <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
                             {paginatedClients.map((client) => (
                                 <tr key={client.id} className={`group ${client.clientStatus === 'no_apto' ? 'bg-red-50 dark:bg-red-900/20' : ''} hover:bg-slate-50 dark:hover:bg-slate-700/50`}>
-                                    <td className={`sticky left-0 px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white ${client.clientStatus === 'no_apto' ? 'bg-red-50 dark:bg-red-900/30' : 'bg-white dark:bg-slate-800'} group-hover:bg-slate-100 dark:group-hover:bg-slate-700`}>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">
                                         {client.clientFullName}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
