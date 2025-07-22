@@ -160,7 +160,12 @@ export const fetchClientsFromN8n = async (): Promise<SaleData[]> => {
             // --- End Status Handling ---
 
             const today = new Date().toISOString().split('T')[0];
-            const purchaseDate = mapDateToYYYYMMDD(rawClient['Marca temporal']) || today;
+            
+            // Correctly source the purchase date. The backend provides 'Fecha de Compra'.
+            // Fallback to 'Marca temporal' (timestamp) for backward compatibility with older records.
+            const purchaseDateSource = rawClient['Fecha de Compra'] || rawClient['Marca temporal'];
+            const purchaseDate = mapDateToYYYYMMDD(purchaseDateSource) || today;
+            
             const paymentStartDate = mapDateToYYYYMMDD(rawClient['Fecha inicio de pago']) || today;
 
 
