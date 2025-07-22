@@ -113,9 +113,11 @@ const App: React.FC = () => {
         setError(null);
         setLoadingMessage(t('loading'));
         
-        // --- Pre-submission Validation ---
-        if (!formData.id && formData.clientCpf) {
-            const normalizeCpf = (cpf: string) => (cpf || '').replace(/\D/g, '');
+        const normalizeCpf = (cpf: string) => (cpf || '').replace(/\D/g, '');
+        const isCreating = !formData.id;
+
+        // --- Pre-submission Validation for new purchases ---
+        if (isCreating && formData.clientCpf) {
             const newClientCpf = normalizeCpf(formData.clientCpf);
             
             if (newClientCpf) {
@@ -135,7 +137,18 @@ const App: React.FC = () => {
             const success = await n8nService.sendFormDataToN8n(finalData, fileObjects);
 
             if (success) {
-                const isCreating = !formData.id;
+                // If a new purchase was just created, immediately mark the client as 'no_apto'.
+                // This prevents further purchases until an admin marks them as 'apto' again.
+                if (isCreating && formData.clientCpf) {
+                    try {
+                        await n8nService.updateClientStatusInN8n(formData.clientCpf, 'no_apto');
+                    } catch (statusUpdateError) {
+                        console.error("Failed to automatically update client status to 'no_apto' after purchase, but the purchase was saved.", statusUpdateError);
+                        // The main operation (saving the purchase) was successful, so we don't block.
+                        // We can show a non-blocking warning here if needed, but for now, just log it.
+                    }
+                }
+                
                 const isUpdating = !!formData.id;
                 const isAdmin = currentUser?.role === 'admin';
 
