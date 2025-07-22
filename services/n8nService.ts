@@ -161,10 +161,9 @@ export const fetchClientsFromN8n = async (): Promise<SaleData[]> => {
 
             const today = new Date().toISOString().split('T')[0];
             
-            // Correctly source the purchase date. The backend provides 'Fecha de Compra'.
-            // Fallback to 'Marca temporal' (timestamp) for backward compatibility with older records.
-            const purchaseDateSource = rawClient['Fecha de Compra'] || rawClient['Marca temporal'];
-            const purchaseDate = mapDateToYYYYMMDD(purchaseDateSource) || today;
+            // Prioritize the 'Fecha de Compra' field. Fallback to today's date if missing.
+            // Removed fallback to 'Marca temporal' to prevent incorrect dates from being shown.
+            const purchaseDate = mapDateToYYYYMMDD(rawClient['Fecha de Compra']) || today;
             
             const paymentStartDate = mapDateToYYYYMMDD(rawClient['Fecha inicio de pago']) || today;
 
