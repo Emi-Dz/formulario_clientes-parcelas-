@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { SaleData, PaymentSystem, Language, ClientType } from '../types';
 import { PAYMENT_OPTIONS, CLIENT_TYPE_OPTIONS } from '../constants';
@@ -336,17 +337,6 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
             
             <Fieldset legend={t('clientDetails')}>
                 <Input
-                    label={t('sobrenomeENome')}
-                    id="clientFullName"
-                    name="clientFullName"
-                    value={formData.clientFullName}
-                    onChange={handleChange}
-                    required
-                    placeholder={t('placeholder_clientName')}
-                    wrapperClass="md:col-span-2"
-                />
-                
-                <Input
                     label={t('cpf')}
                     id="clientCpf"
                     name="clientCpf"
@@ -358,6 +348,18 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
                 />
 
                 <Input
+                    label={t('sobrenomeENome')}
+                    id="clientFullName"
+                    name="clientFullName"
+                    value={formData.clientFullName}
+                    onChange={handleChange}
+                    required
+                    placeholder={t('placeholder_clientName')}
+                />
+
+                {isClientNotApt && !isEditMode && <NotAptWarning message={t('warning_client_not_apt')} />}
+                
+                <Input
                     label={t('telefone')}
                     id="phone"
                     name="phone"
@@ -367,8 +369,6 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
                     placeholder={t('placeholder_phone')}
                 />
                 
-                {isClientNotApt && !isEditMode && <NotAptWarning message={t('warning_client_not_apt')} />}
-
                  <Input
                     as="select"
                     label={t('clientType')}
