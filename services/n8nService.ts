@@ -1,4 +1,3 @@
-
 import { SaleData, PaymentSystem, UserWithPassword, ClientStatus } from '../types';
 
 /**
@@ -161,9 +160,10 @@ export const fetchClientsFromN8n = async (): Promise<SaleData[]> => {
 
             const today = new Date().toISOString().split('T')[0];
             
-            // Prioritize the 'Fecha de Compra' field. Fallback to today's date if missing.
-            // Removed fallback to 'Marca temporal' to prevent incorrect dates from being shown.
-            const purchaseDate = mapDateToYYYYMMDD(rawClient['Fecha de Compra']) || today;
+            // Correctly handle case-sensitivity for the purchase date field.
+            // The backend sends "Fecha de compra", but we check for "Fecha de Compra" as a fallback.
+            const purchaseDateValue = rawClient['Fecha de compra'] || rawClient['Fecha de Compra'];
+            const purchaseDate = mapDateToYYYYMMDD(purchaseDateValue) || today;
             
             const paymentStartDate = mapDateToYYYYMMDD(rawClient['Fecha inicio de pago']) || today;
 
