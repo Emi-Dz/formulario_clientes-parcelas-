@@ -13,27 +13,27 @@ interface SortConfig {
 
 // --- Icons ---
 const EditIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z" />
     </svg>
 );
 const DeleteIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
     </svg>
 );
 const SummaryIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
     </svg>
 );
 const FlagIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6H8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
     </svg>
 );
 const LoadingSpinnerIcon = () => (
-    <svg className="animate-spin h-5 w-5 mr-1.5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
     </svg>
@@ -143,8 +143,38 @@ const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit, onNew,
         );
     };
 
+    const ActionButtons = ({ client }: { client: SaleData }) => (
+        <div className="flex items-center justify-end gap-2 flex-wrap">
+            <button 
+                onClick={() => handleStatusChange(client)}
+                disabled={!!updatingStatusId || !client.clientCpf || isRefreshing}
+                className={`inline-flex items-center justify-center p-2 border border-transparent text-sm leading-4 font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed
+                    ${client.clientStatus === 'no_apto' 
+                        ? 'text-green-700 bg-green-100 hover:bg-green-200 focus:ring-green-500 dark:bg-green-900/50 dark:text-green-300 dark:hover:bg-green-900' 
+                        : 'text-amber-700 bg-amber-100 hover:bg-amber-200 focus:ring-amber-500 dark:bg-amber-900/50 dark:text-amber-300 dark:hover:bg-amber-900'}`}
+                title={client.clientStatus === 'apto' ? t('mark_as_not_apt') : t('mark_as_apt')}
+            >
+                {updatingStatusId === client.id ? <LoadingSpinnerIcon /> : <FlagIcon />}
+            </button>
+            <button 
+                onClick={() => onGenerateSummary(client.id)} 
+                disabled={!!generatingSummaryId || isRefreshing}
+                className="inline-flex items-center justify-center p-2 border border-transparent text-sm leading-4 font-medium rounded-md text-sky-700 bg-sky-100 hover:bg-sky-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 dark:bg-sky-900/50 dark:text-sky-300 dark:hover:bg-sky-900 disabled:opacity-60 disabled:cursor-not-allowed"
+                title={t('generateSummaryButton')}
+            >
+                {generatingSummaryId === client.id ? <LoadingSpinnerIcon /> : <SummaryIcon />}
+            </button>
+            <button onClick={() => onEdit(client.id)} disabled={isRefreshing} className="inline-flex items-center p-2 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-indigo-900/50 dark:text-indigo-300 dark:hover:bg-indigo-900 disabled:opacity-60 disabled:cursor-not-allowed" title={t('editButton')}>
+                <EditIcon />
+            </button>
+            <button onClick={() => onDelete(client.id, client.clientFullName)} disabled={isRefreshing} className="inline-flex items-center p-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900 disabled:opacity-60 disabled:cursor-not-allowed" title={t('deleteButton')}>
+                <DeleteIcon />
+            </button>
+        </div>
+    );
+
     return (
-        <div className="bg-white dark:bg-slate-800 p-6 md:p-8 rounded-xl shadow-lg">
+        <div className="bg-white dark:bg-slate-800 p-4 md:p-8 rounded-xl shadow-lg">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <h1 className="text-2xl font-bold text-slate-800 dark:text-white">{t('clientListTitle')}</h1>
                 <div className="flex items-center gap-3 self-end sm:self-center">
@@ -191,7 +221,43 @@ const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit, onNew,
                 </p>
             ) : (
                 <>
-                <div className="overflow-x-auto">
+                {/* Mobile Card View */}
+                <div className="space-y-4 md:hidden">
+                    {paginatedClients.map((client) => (
+                        <div key={client.id} className={`p-4 rounded-lg shadow-md border ${client.clientStatus === 'no_apto' ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/30' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
+                            <div className="flex justify-between items-start mb-3">
+                                <h3 className="text-lg font-bold text-slate-800 dark:text-white pr-2">{client.clientFullName}</h3>
+                                {client.clientStatus === 'apto' ? (
+                                    <span className="px-2 py-1 text-xs font-semibold leading-5 text-green-800 bg-green-100 rounded-full dark:bg-green-800 dark:text-green-100 shrink-0">{t('status_apto')}</span>
+                                ) : (
+                                    <span className="px-2 py-1 text-xs font-semibold leading-5 text-red-800 bg-red-100 rounded-full dark:bg-red-800 dark:text-red-100 shrink-0">{t('status_no_apto')}</span>
+                                )}
+                            </div>
+                            <div className="space-y-2 text-sm border-t border-slate-200 dark:border-slate-700 pt-3 mb-4">
+                                <div className="flex justify-between">
+                                    <span className="font-medium text-slate-500 dark:text-slate-400">{t('colCpf')}:</span>
+                                    <span className="text-slate-700 dark:text-slate-300 font-mono">{client.clientCpf}</span>
+                                </div>
+                                <div className="flex justify-between gap-4">
+                                    <span className="font-medium text-slate-500 dark:text-slate-400 shrink-0">{t('colProduct')}:</span>
+                                    <span className="text-slate-700 dark:text-slate-300 text-right truncate">{client.product}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="font-medium text-slate-500 dark:text-slate-400">{t('colTotal')}:</span>
+                                    <span className="text-slate-700 dark:text-slate-200 font-semibold">R$ {(client.totalProductPrice ?? 0).toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="font-medium text-slate-500 dark:text-slate-400">{t('purchaseDate')}:</span>
+                                    <span className="text-slate-500 dark:text-slate-400">{client.purchaseDate}</span>
+                                </div>
+                            </div>
+                            <ActionButtons client={client} />
+                        </div>
+                    ))}
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
                         <thead className="bg-slate-50 dark:bg-slate-700">
                             <tr>
@@ -236,33 +302,7 @@ const ClientListPage: React.FC<ClientListPageProps> = ({ clients, onEdit, onNew,
                                         )}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <div className="flex items-center justify-end gap-1 sm:gap-2">
-                                            <button 
-                                                onClick={() => handleStatusChange(client)}
-                                                disabled={!!updatingStatusId || !client.clientCpf || isRefreshing}
-                                                className={`inline-flex items-center justify-center p-2 border border-transparent text-sm leading-4 font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed
-                                                    ${client.clientStatus === 'no_apto' 
-                                                        ? 'text-green-700 bg-green-100 hover:bg-green-200 focus:ring-green-500 dark:bg-green-900/50 dark:text-green-300 dark:hover:bg-green-900' 
-                                                        : 'text-amber-700 bg-amber-100 hover:bg-amber-200 focus:ring-amber-500 dark:bg-amber-900/50 dark:text-amber-300 dark:hover:bg-amber-900'}`}
-                                                title={client.clientStatus === 'apto' ? t('mark_as_not_apt') : t('mark_as_apt')}
-                                            >
-                                                {updatingStatusId === client.id ? <LoadingSpinnerIcon /> : <FlagIcon />}
-                                            </button>
-                                            <button 
-                                                onClick={() => onGenerateSummary(client.id)} 
-                                                disabled={!!generatingSummaryId || isRefreshing}
-                                                className="inline-flex items-center justify-center p-2 border border-transparent text-sm leading-4 font-medium rounded-md text-sky-700 bg-sky-100 hover:bg-sky-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 dark:bg-sky-900/50 dark:text-sky-300 dark:hover:bg-sky-900 disabled:opacity-60 disabled:cursor-not-allowed"
-                                                title={t('generateSummaryButton')}
-                                            >
-                                                {generatingSummaryId === client.id ? <LoadingSpinnerIcon /> : <SummaryIcon />}
-                                            </button>
-                                            <button onClick={() => onEdit(client.id)} disabled={isRefreshing} className="inline-flex items-center p-2 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-indigo-900/50 dark:text-indigo-300 dark:hover:bg-indigo-900 disabled:opacity-60 disabled:cursor-not-allowed" title={t('editButton')}>
-                                                <EditIcon />
-                                            </button>
-                                            <button onClick={() => onDelete(client.id, client.clientFullName)} disabled={isRefreshing} className="inline-flex items-center p-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900 disabled:opacity-60 disabled:cursor-not-allowed" title={t('deleteButton')}>
-                                                <DeleteIcon />
-                                            </button>
-                                        </div>
+                                        <ActionButtons client={client} />
                                     </td>
                                 </tr>
                             ))}
