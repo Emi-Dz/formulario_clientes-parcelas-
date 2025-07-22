@@ -307,27 +307,27 @@ const App: React.FC = () => {
     const handleUpdateClientStatus = async (clientToUpdate: SaleData, newStatus: ClientStatus) => {
         if (currentUser?.role !== 'admin' || !clientToUpdate.clientCpf) return;
         
+        const clientCpfToUpdate = clientToUpdate.clientCpf;
+
         setIsUpdatingStatusId(clientToUpdate.id);
         setError(null);
         setSuccessMessage(null);
 
         try {
-            const success = await n8nService.updateClientStatusInN8n(clientToUpdate.clientCpf, newStatus);
+            const success = await n8nService.updateClientStatusInN8n(clientCpfToUpdate, newStatus);
             if (success) {
-                // To avoid race conditions, we'll immediately refetch the entire list
-                // which is the most reliable way to reflect the change that affects all of a client's records.
-                await fetchClients();
-
                 const statusText = newStatus === 'apto' ? t('status_apto') : t('status_no_apto');
-                showSuccess(t('successStatusUpdate', { clientName: clientToUpdate.clientFullName, status: statusText }));
+                const successMsg = t('successStatusUpdate', { clientName: clientToUpdate.clientFullName, status: statusText });
+                sessionStorage.setItem(SUCCESS_MESSAGE_KEY, successMsg);
+                window.location.reload();
             } else {
                 showError(t('errorStatusUpdate', { clientName: clientToUpdate.clientFullName }));
+                setIsUpdatingStatusId(null);
             }
         } catch (err) {
              const errorMessage = err instanceof Error ? err.message : t('errorUnknown');
             showError(`${t('errorStatusUpdate', { clientName: clientToUpdate.clientFullName })}: ${errorMessage}`);
-        } finally {
-             setIsUpdatingStatusId(null);
+            setIsUpdatingStatusId(null);
         }
     };
 
