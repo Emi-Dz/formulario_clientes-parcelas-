@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { SaleData, PaymentSystem, Language, ClientType } from '../types';
 import { PAYMENT_OPTIONS, CLIENT_TYPE_OPTIONS } from '../constants';
@@ -126,6 +125,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ initialData, onSub
                     // Overwrite with existing client's data, using most recent record as the base
                     clientFullName: mostRecentRecord.clientFullName,
                     phone: mostRecentRecord.phone,
+                    storeName: mostRecentRecord.storeName,
                     workLocation: mostRecentRecord.workLocation,
                     workAddress: mostRecentRecord.workAddress,
                     homeLocation: mostRecentRecord.homeLocation,
