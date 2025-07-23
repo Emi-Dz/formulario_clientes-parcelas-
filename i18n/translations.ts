@@ -90,7 +90,7 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         enderecoCasa: 'Dirección Casa',
         fotoLoja: 'Foto Tienda',
         fotoContrato: 'FOTO CONTRATO (FRENTE Y VERSO)',
-        fotoDocumentos: 'FOTOS DOCUMENTOS (RG Y CPF)',
+        fotoDocumentos: 'FOTOS RG',
         fotoCasa: 'Foto Casa',
         fotoCara: 'Foto Cara',
         fotoCodigoTelefono: 'Foto Código Teléfono',
@@ -152,10 +152,6 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         errorStatusUpdate: 'Error al actualizar el estado de {{clientName}}.',
         warning_client_not_apt: 'CLIENTE NO APTO. CONTACTAR AL ADMINISTRADOR.',
 
-        // Sorting
-        sort_by: 'Ordenar por',
-        sort_asc: 'Asc',
-        sort_desc: 'Desc',
     },
     pt: {
         // Header
@@ -247,7 +243,7 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         enderecoCasa: 'Endereço Casa',
         fotoLoja: 'Foto Loja',
         fotoContrato: 'FOTO CONTRATO (FRENTE E VERSO)',
-        fotoDocumentos: 'FOTOS DOCUMENTOS (RG E CPF)',
+        fotoDocumentos: 'FOTOS RG',
         fotoCasa: 'Foto Casa',
         fotoCara: 'Foto Rosto',
         fotoCodigoTelefono: 'Foto Código Telefone',
@@ -307,10 +303,5 @@ export const translations: { [key: string]: { [key:string]: string } } = {
         errorGenerateSummary: 'Erro ao gerar o resumo para {{clientName}}.',
         errorStatusUpdate: 'Erro ao atualizar o status de {{clientName}}.',
         warning_client_not_apt: 'CLIENTE NÃO APTO. ENTRAR EM CONTATO COM O ADMINISTRADOR.',
-        
-        // Sorting
-        sort_by: 'Ordenar por',
-        sort_asc: 'Asc',
-        sort_desc: 'Desc',
     },
 };
